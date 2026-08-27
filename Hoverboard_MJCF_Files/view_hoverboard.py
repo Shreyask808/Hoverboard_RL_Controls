@@ -1,7 +1,7 @@
 import mujoco
 import mujoco.viewer
 
-xml_path = "hoverboard_1.xml"
+xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_1.xml"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
