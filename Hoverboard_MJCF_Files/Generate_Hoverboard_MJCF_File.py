@@ -1,6 +1,7 @@
 import os
 import sys
-
+import tkinter as tk
+from tkinter import filedialog
 
 #=================================================================================================================================================================================
 os.system('cls' if os.name == 'nt' else 'clear')
@@ -13,6 +14,7 @@ M = float(input("Enter Hoverboard Wheel Mass M [kg]:"))
 h = float(input("Enter Inverted Pendulum Length h [m]:"))
 m = float(input("Enter Inverted Pendulum Mass m [kg]:"))
 T_max = float(input("Enter Maximum Motor Torque Output T_max [N.m]:"))
+filename = input("Enter the Filename:")
 
 #=================================================================================================================================================================================
 # Define MJCF File
@@ -31,7 +33,7 @@ def generate_MJCF(R,L,M,h,m,T_max):
         <body name="chassis" pos="0 0 {R}">
             <joint type="free"/>
             <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-            <geom name="chassis_geom" type="cylinder" size="0.02 {L/2}" quat="0.707 0.707 0 0"rgba="0.6 0.6 0.6 1"/>
+            <geom name="chassis_geom" type="cylinder" size="0.02 {L/2}" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
             <body name="left_wheel" pos="0 {L/2} 0">
                 <joint name="left_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
@@ -68,3 +70,16 @@ def generate_MJCF(R,L,M,h,m,T_max):
 #=================================================================================================================================================================================
 # Generate and Save MJCF File
 hoverboard = generate_MJCF(R,L,M,h,m,T_max)
+root = tk.Tk()
+root.withdraw()
+save_dir = filedialog.askdirectory(title="Select folder to save URDF files")
+
+if not save_dir:
+    print("Save cancelled.")
+else:
+    path = os.path.join(save_dir, filename)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(hoverboard)
+    print(f"Saved: {path}")
+    print("\nAll 3 URDF files saved successfully.")
+    print("Point your simulation script to this folder.")
