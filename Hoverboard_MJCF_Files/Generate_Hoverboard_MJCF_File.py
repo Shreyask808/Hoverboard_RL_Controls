@@ -38,13 +38,13 @@ def generate_MJCF(R,L,M,h,m,T_max):
             <body name="left_wheel" pos="0 {L/2} 0">
                 <joint name="left_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
                 <inertial pos="0 0 0" mass="{M}" diaginertia="{(M*R**2)/4} {(M*R**2)/2} {(M*R**2)/4}"/>
-                <geom name="left_wheel_geom" type="cylinder" size="{R} 0.05" quat="0.707 0.707 0 0" rgba="0 0 1 1"/>
+                <geom name="left_wheel_geom" type="cylinder" size="{R} 0.02" quat="0.707 0.707 0 0" rgba="0 0 1 1"/>
             </body>
 
             <body name="right_wheel" pos="0 {-L/2} 0">
                 <joint name="right_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
                 <inertial pos="0 0 0" mass="{M}" diaginertia="{(M*R**2)/4} {(M*R**2)/2} {(M*R**2)/4}"/>
-                <geom name="right_wheel_geom" type="cylinder" size="{R} 0.05" quat="0.707 0.707 0 0" rgba="1 0 0 1"/>
+                <geom name="right_wheel_geom" type="cylinder" size="{R} 0.02" quat="0.707 0.707 0 0" rgba="1 0 0 1"/>
             </body>
 
             <body name="pendulum_rod" pos="0 0 0">
