@@ -70,16 +70,12 @@ def generate_MJCF(R,L,M,h,m,T_max):
 #=================================================================================================================================================================================
 # Generate and Save MJCF File
 hoverboard = generate_MJCF(R,L,M,h,m,T_max)
-root = tk.Tk()
-root.withdraw()
-save_dir = filedialog.askdirectory(title="Select folder to save URDF files")
+path = "/mnt/c/Users/admin/Documents/GitHub/Hoverboard_RL_Controls/Hoverboard_MJCF_Files"
+if not filename.endswith(".xml"):
+    filename +=".xml"
 
-if not save_dir:
-    print("Save cancelled.")
-else:
-    path = os.path.join(save_dir, filename)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(hoverboard)
-    print(f"Saved: {path}")
-    print("\nAll 3 URDF files saved successfully.")
-    print("Point your simulation script to this folder.")
+full_path = os.path.join(path, filename)
+with open(full_path,"w", encoding="utf-8") as f:
+    f.write(hoverboard)
+print(f"Saved: {full_path}")
+
