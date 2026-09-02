@@ -47,14 +47,19 @@ def generate_MJCF(R,L,M,h,m,T_max):
                 <geom name="right_wheel_geom" type="cylinder" size="{R} 0.02" quat="0.707 0.707 0 0" rgba="1 0 0 1"/>
             </body>
 
-            <body name="pendulum_rod" pos="0 0 0">
-                <joint name="pend_hinge" type="hinge" axis="0 1 0" damping="0.0005"/>
-                <inertial pos="0 0 {h/2}" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-                <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 {h}" size="0.015" rgba="0.6 0.6 0.6 1"/>
+            <body name="pendulum_gimble" pos="0 0 0">
+                <joint name = "pend_hinge_x" type="hinge" axis="1 0 0" damping="0.0005"/>
+                <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
 
-                <body name="pendulum_mass" pos="0 0 {h}">
-                    <inertial pos="0 0 0" mass="{m}" diaginertia="0.001 0.001 0.001"/>
-                    <geom name="mass_geom" type="sphere" size="0.04" rgba="0 1 0 1"/>
+                <body name="pendulum_rod" pos="0 0 0">
+                    <joint name="pend_hinge_y" type="hinge" axis="0 1 0" damping="0.0005"/>
+                    <inertial pos="0 0 {h/2}" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
+                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 {h}" size="0.015" rgba="0.6 0.6 0.6 1"/>
+
+                    <body name="pendulum_mass" pos="0 0 {h}">
+                        <inertial pos="0 0 0" mass="{m}" diaginertia="0.001 0.001 0.001"/>
+                        <geom name="mass_geom" type="sphere" size="0.04" rgba="0 1 0 1"/>
+                    </body>
                 </body>
             </body>
         </body>
