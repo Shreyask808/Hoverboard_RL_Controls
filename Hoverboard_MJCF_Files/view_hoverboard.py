@@ -10,5 +10,4 @@ data = mujoco.MjData(model)
 duration = 5
 framerate = 60
 
-while data.time < duration:
-    mujoco.mj_step(model, data)
+mujoco.viewer.launch_passive(model,data)
