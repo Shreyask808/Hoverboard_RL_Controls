@@ -21,9 +21,9 @@ filename = input("Enter the Filename:")
 def generate_MJCF(R,L,M,h,m,T_max):
     return f""" <mujoco model="hoverboard">
     <asset>
-        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height=512"/>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
     </asset>
-    
+
     <option gravity="0 0 -9.81" timestep="0.002" integrator="RK4"/>
 
     <default>
