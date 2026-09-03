@@ -11,23 +11,23 @@
     </default>
 
     <worldbody>
-        <geom name="floor" type="plane" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
+        <geom name="floor" type="plane" size="0 0 0.1" rgba="0.8 0.8 0.8 1"/>
         
-        <body name="chassis" pos="0 0 0.5">
+        <body name="chassis" pos="0 0 0.4">
             <joint type="free"/>
             <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-            <geom name="chassis_geom" type="cylinder" size="0.02 0.5" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
+            <geom name="chassis_geom" type="cylinder" size="0.02 0.4" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
-            <body name="left_wheel" pos="0 0.5 0">
+            <body name="left_wheel" pos="0 0.4 0">
                 <joint name="left_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
-                <inertial pos="0 0 0" mass="5.0" diaginertia="0.3125 0.625 0.3125"/>
-                <geom name="left_wheel_geom" type="cylinder" size="0.5 0.02" quat="0.707 0.707 0 0" rgba="0 0 1 1"/>
+                <inertial pos="0 0 0" mass="10.0" diaginertia="0.4000000000000001 0.8000000000000002 0.4000000000000001"/>
+                <geom name="left_wheel_geom" type="cylinder" size="0.4 0.02" quat="0.707 0.707 0 0" rgba="0 0 1 1"/>
             </body>
 
-            <body name="right_wheel" pos="0 -0.5 0">
+            <body name="right_wheel" pos="0 -0.4 0">
                 <joint name="right_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
-                <inertial pos="0 0 0" mass="5.0" diaginertia="0.3125 0.625 0.3125"/>
-                <geom name="right_wheel_geom" type="cylinder" size="0.5 0.02" quat="0.707 0.707 0 0" rgba="1 0 0 1"/>
+                <inertial pos="0 0 0" mass="10.0" diaginertia="0.4000000000000001 0.8000000000000002 0.4000000000000001"/>
+                <geom name="right_wheel_geom" type="cylinder" size="0.4 0.02" quat="0.707 0.707 0 0" rgba="1 0 0 1"/>
             </body>
 
             <body name="pendulum_gimble" pos="0 0 0">
@@ -36,10 +36,10 @@
 
                 <body name="pendulum_rod" pos="0 0 0">
                     <joint name="pend_hinge_y" type="hinge" axis="0 1 0" damping="0.0005"/>
-                    <inertial pos="0 0 0.15" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 0.3" size="0.015" rgba="0.6 0.6 0.6 1"/>
+                    <inertial pos="0 0 0.2" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
+                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 0.4" size="0.015" rgba="0.6 0.6 0.6 1"/>
 
-                    <body name="pendulum_mass" pos="0 0 0.3">
+                    <body name="pendulum_mass" pos="0 0 0.4">
                         <inertial pos="0 0 0" mass="50.0" diaginertia="0.001 0.001 0.001"/>
                         <geom name="mass_geom" type="sphere" size="0.04" rgba="0 1 0 1"/>
                     </body>
