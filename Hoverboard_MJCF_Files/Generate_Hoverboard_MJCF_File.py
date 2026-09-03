@@ -32,7 +32,7 @@ def generate_MJCF(R,L,M,h,m,T_max):
     </default>
 
     <worldbody>
-        <geom name="floor" type="plane" size="50 50 0.1" rgba="0.8 0.8 0.8 1"/>
+        <geom name="floor" type="plane" size="0 0 0.1" rgba="0.8 0.8 0.8 1"/>
         
         <body name="chassis" pos="0 0 {R}">
             <joint type="free"/>
