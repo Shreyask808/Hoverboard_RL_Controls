@@ -14,6 +14,8 @@ theta = []
 thetadot = []
 gamma =[]
 gammadot = []
+Ml_log = []
+Mr_log = []
 
 duration= 100
 left_motor_id = model.actuator("left_motor").id
@@ -33,8 +35,8 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
     while viewer.is_running() and data.time < duration:
         step_start = time.time()
 
-        Ml = -300*data.qpos[pend_hinge_y_qpos_id] - 200*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #- 0.1*data.qvel[pend_hinge_x_qvel_id]
-        Mr = -300*data.qpos[pend_hinge_y_qpos_id] + 200*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #+ 0.1*data.qvel[pend_hinge_x_qvel_id]
+        Ml = -3*data.qpos[pend_hinge_y_qpos_id] - 2*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #- 0.1*data.qvel[pend_hinge_x_qvel_id]
+        Mr = -3*data.qpos[pend_hinge_y_qpos_id] + 2*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #+ 0.1*data.qvel[pend_hinge_x_qvel_id]
 
         Ml = np.clip(Ml,-T_max,T_max)
         Mr = np.clip(Mr,-T_max,T_max)
@@ -51,7 +53,10 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
 
         thetadot.append(data.qvel[pend_hinge_y_qvel_id])
         gammadot.append(data.qvel[pend_hinge_x_qvel_id])
-    
+
+        Ml_log.append(Mr)
+        Mr_log.append(Mr)
+
         time_until_next_step = model.opt.timestep - (time.time() - step_start)
         if time_until_next_step > 0:
             time.sleep(time_until_next_step)
@@ -79,5 +84,17 @@ ax4.set_xlabel('Time [sec]')
 ax4.set_ylabel('Gammadot [deg/sec]')
 ax4.grid(True, alpha=0.3)
 
+plt.tight_layout()
+plt.show()
+
+fig, (ax1) = plt.subplots(1,1, figsize=[10,12], sharex=True)
+ax1.plot(time_log,Ml_log,color='blue',label='Left Wheel Torque')
+ax1.plot(time_log,Mr_log,color='red',label='Right Wheel Torque')
+ax1.axhline(-T_max,color='black',linestyle='--')
+ax1.axhline(T_max,color='black',linestyle='--')
+ax1.grid(True, alpha=0.3)
+ax1.set_xlabel('Time [sec]')
+ax1.set_ylabel('Motor Torque [N.m]')
+ax1.legend()
 plt.tight_layout()
 plt.show()
