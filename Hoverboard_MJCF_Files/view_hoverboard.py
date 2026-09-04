@@ -33,8 +33,8 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
     while viewer.is_running() and data.time < duration:
         step_start = time.time()
 
-        Ml = -300*data.qpos[pend_hinge_y_qpos_id] - 200*data.qpos[pend_hinge_x_qpos_id] #+ 0.1*data.qvel[pend_hinge_y_qvel_id] - 0.1*data.qvel[pend_hinge_x_qvel_id]
-        Mr = -300*data.qpos[pend_hinge_y_qpos_id] + 200*data.qpos[pend_hinge_x_qpos_id] #+ 0.1*data.qvel[pend_hinge_y_qvel_id] + 0.1*data.qvel[pend_hinge_x_qvel_id]
+        Ml = -300*data.qpos[pend_hinge_y_qpos_id] - 200*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #- 0.1*data.qvel[pend_hinge_x_qvel_id]
+        Mr = -300*data.qpos[pend_hinge_y_qpos_id] + 200*data.qpos[pend_hinge_x_qpos_id] + 0.1*data.qvel[pend_hinge_y_qvel_id] #+ 0.1*data.qvel[pend_hinge_x_qvel_id]
 
         Ml = np.clip(Ml,-T_max,T_max)
         Mr = np.clip(Mr,-T_max,T_max)
