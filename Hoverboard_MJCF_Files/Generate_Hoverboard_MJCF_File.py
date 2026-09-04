@@ -35,7 +35,9 @@ def generate_MJCF(R,L,M,h,m,T_max):
         <geom name="floor" type="plane" size="0 0 0.1" rgba="0.8 0.8 0.8 1"/>
         
         <body name="chassis" pos="0 0 {R}">
-            <joint type="free"/>
+            <joint name="chassis_x" type="slide" axis="1 0 0"/>
+            <joint name="chassis_y" type="slide" axis="0 1 0"/>
+            <joint name="chassis_z" type="slide" axis="0 0 1"/>
             <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
             <geom name="chassis_geom" type="cylinder" size="0.02 {L/2}" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
