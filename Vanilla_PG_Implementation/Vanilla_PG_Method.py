@@ -104,12 +104,16 @@ class PolicyNet(nn.Module):
     def forward(self,x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.tanh(self.fc3(x)) # motor control torques = low + (NN_output + 1)*(high - low)/2
+        x = F.tanh(self.fc3(x)) # Continuous Gaussian Distribution 
 
         return x
 
-hoverboard = hoverboardEnv(xml_path) 
-print(hoverboard.hbdata.qpos)
-input_dim = hoverboard.hbmodel.nq
-output_dim = hoverboard.hbmodel.nu
-nn_policy = PolicyNet(input_dim,64,64,output_dim)
+# =================================================================================================================================================================================================================
+# Mujoco Model and Policy net Definition
+hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
+input_dim = (hoverboard.hbmodel.nq + hoverboard.hbmodel.nv)                                                     # Inputs to the Policy Net (All qpos + qvel)
+output_dim = 2*hoverboard.hbmodel.nu                                                                            # Each Motor Torque is a continuous Gaussian Distribution with a mean and variance as the outputs
+nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
+
+model_parameters = sum(p.numel() for p in nn_policy.parameters())
+print(model_parameters)
