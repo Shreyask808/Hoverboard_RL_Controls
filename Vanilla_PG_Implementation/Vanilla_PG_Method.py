@@ -24,7 +24,7 @@ class hoverboardEnv(gymnasium.Env):
 
         obs_dim = self.hbmodel.nq + self.hbmodel.nv
         ctrl_dim = self.hbmodel.nu
-
+        self.max_T = np.sum(self.hbmodel.actuator_ctrlrange[:,1]**2)
         self.step_count = 0
         self.max_count = int(120/self.hbmodel.opt.timestep)
         self.hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
@@ -73,6 +73,27 @@ class hoverboardEnv(gymnasium.Env):
     def _get_obs(self):
         return np.concatenate([self.hbdata.qpos, self.hbdata.qvel])
 
+    def _compute_reward(self):
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
+        gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
+
+        balance_reward = -(th**2 + gamma**2)
+        rate_reward = -0.1*(thdot**2 + gammadot**2)
+        action_reward = -0.001*np.sum(self.hbdata.ctrl**2)/self.max_T
+        alive_bonus = 1
+
+        reward = alive_bonus + action_reward + rate_reward + balance_reward
+        return reward
+
+    def _check_done(self):
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+
+        return bool(abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45))
+
+
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
         super().__init__()
@@ -88,7 +109,7 @@ class PolicyNet(nn.Module):
         return x
 
 hoverboard = hoverboardEnv(xml_path) 
-print(hoverboard.hbmodel.nq,hoverboard.hbmodel.nu)
+print(hoverboard.hbdata.qpos)
 input_dim = hoverboard.hbmodel.nq
 output_dim = hoverboard.hbmodel.nu
 nn_policy = PolicyNet(input_dim,64,64,output_dim)
