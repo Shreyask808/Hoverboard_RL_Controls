@@ -112,7 +112,7 @@ class PolicyNet(nn.Module):
 # Mujoco Model and Policy net Definition
 hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
 input_dim = (hoverboard.hbmodel.nq + hoverboard.hbmodel.nv)                                                     # Inputs to the Policy Net (All qpos + qvel)
-output_dim = 2*hoverboard.hbmodel.nu                                                                            # Each Motor Torque is a continuous Gaussian Distribution with a mean and variance as the outputs
+output_dim = 2*hoverboard.hbmodel.nu                                                                            # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
 nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
 
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
