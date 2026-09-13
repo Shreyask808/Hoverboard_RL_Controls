@@ -46,8 +46,8 @@ class hoverboardEnv(gymnasium.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.hbmodel,self.hbdata)
 
-        th_ini = np.deg2rad(0)
-        gamma_ini = np.deg2rad(0)
+        th_ini = self.np_random.uniform(-np.deg2rad(50), np.rad2deg(50))
+        gamma_ini = self.np_random.uniform(-np.deg2rad(50), np.rad2deg(50))
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -114,6 +114,13 @@ hoverboard = hoverboardEnv(xml_path)                                            
 input_dim = (hoverboard.hbmodel.nq + hoverboard.hbmodel.nv)                                                     # Inputs to the Policy Net (All qpos + qvel)
 output_dim = 2*hoverboard.hbmodel.nu                                                                            # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
 nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
+model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
-model_parameters = sum(p.numel() for p in nn_policy.parameters())
-print(model_parameters)
+batchsize = 32                                                                                                  # Number of 
+print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+print("")
+print(f"1. Input Dimensions to the NN Policy - {input_dim}")
+print("")
+print(f"2. Output Dimensions to the NN Policy - {output_dim}")
+print("")
+print(f"3. Number of Parameters in NN Policy - {model_parameters}")
