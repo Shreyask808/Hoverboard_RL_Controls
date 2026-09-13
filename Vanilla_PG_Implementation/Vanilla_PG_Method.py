@@ -46,8 +46,8 @@ class hoverboardEnv(gymnasium.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.hbmodel,self.hbdata)
 
-        th_ini = self.np_random.uniform(-np.deg2rad(50), np.rad2deg(50))
-        gamma_ini = self.np_random.uniform(-np.deg2rad(50), np.rad2deg(50))
+        th_ini = self.np_random.uniform(-np.deg2rad(50), np.deg2rad(50))
+        gamma_ini = self.np_random.uniform(-np.deg2rad(50), np.deg2rad(50))
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -78,6 +78,7 @@ class hoverboardEnv(gymnasium.Env):
         gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
         thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
         gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
+        discount_factor = 0.99
 
         balance_reward = -(th**2 + gamma**2)
         rate_reward = -0.1*(thdot**2 + gammadot**2)
@@ -85,6 +86,7 @@ class hoverboardEnv(gymnasium.Env):
         alive_bonus = 1
 
         reward = alive_bonus + action_reward + rate_reward + balance_reward
+        reward = discount_factor**(self.step_count*self.hbmodel.opt.timestep)*reward
         return reward
 
     def _check_done(self):
