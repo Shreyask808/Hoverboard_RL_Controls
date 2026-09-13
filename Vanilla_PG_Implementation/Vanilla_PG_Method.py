@@ -118,37 +118,37 @@ def rollout(env,policy_net,device):
     rewards = []
     obs, info = env.reset()
 
-    for t in range(env.max_T):
+    for t in range(int(env.max_T)):
         obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
         mean, std = policy_net(obs_tensor)
         distribution = Normal(mean, std)   
         raw_action = distribution.sample()
-        current_log_prob = distribution.log_prop(raw_action).sum(dim=1)
+        current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
+        current_log_prob = current_log_prob.detach().numpy()
         log_probability.append(current_log_prob)
+        raw_action_np = raw_action.squeeze(0).detach().cpu().numpy()
 
-        action = env.Low + (raw_action + 1)*(env.High - env.Low)/2
+        action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
         obs, reward, terminated, truncated, _ = env.step(action)
+
+        rewards.append(reward)        
 
         if terminated or truncated:
             break
 
-        rewards.append(reward)
-
     return log_probability, rewards
 
-def compute_trajectory_loss(env,log_probability,rewards):
+def compute_reward_to_go(env,log_probability,rewards):
     returns = []
     steps = len(rewards)
+
     for i in range(steps):
         reward_to_go = rewards[i]
         for j in range(steps):
             if j > i:
                 reward_to_go = reward_to_go + env.discount_factor**(j-i)*rewards[j]
-
-        returns.append[reward_to_go]
-
-    traj_loss = np.dot(log_probability,returns)
-    return traj_loss
+        returns.append(reward_to_go)
+    return returns
 
 # =================================================================================================================================================================================================================
 # Mujoco Model and Policy net Definition
@@ -173,7 +173,8 @@ print(f"4. Number of Rollouts per Gradient Step - {batchsize}")
 print("")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
-
 for batch in range(batchsize):
     log_probability, rewards = rollout(hoverboard,nn_policy,device)
-    traj_loss = compute_trajectory_loss(hoverboard,log_probability,rewards)
+    returns = compute_reward_to_go(hoverboard,log_probability,rewards)
+    traj_loss = np.dot(log_probability,returns)
+    
