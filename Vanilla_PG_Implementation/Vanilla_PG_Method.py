@@ -150,6 +150,10 @@ def compute_reward_to_go(env,log_probability,rewards):
         returns.append(reward_to_go)
     return returns
 
+def expectation_across_batches(list,batch_size):
+    expectation = (1/batch_size)*sum(list)
+    return expectation
+
 # =================================================================================================================================================================================================================
 # Mujoco Model and Policy net Definition
 hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
@@ -160,6 +164,8 @@ model_parameters = sum(p.numel() for p in nn_policy.parameters())               
 
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
+max_batches = 1000                                                                                              # Maximum number of batches in the Training
+traj_loss_list = []
 
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 print("")
@@ -173,8 +179,11 @@ print(f"4. Number of Rollouts per Gradient Step - {batchsize}")
 print("")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
-for batch in range(batchsize):
-    log_probability, rewards = rollout(hoverboard,nn_policy,device)
-    returns = compute_reward_to_go(hoverboard,log_probability,rewards)
-    traj_loss = np.dot(log_probability,returns)
+for batch in range(max_batches):
+    for iter in range(batchsize):
+        log_probability, rewards = rollout(hoverboard,nn_policy,device)
+        returns = compute_reward_to_go(hoverboard,log_probability,rewards)
+        traj_loss = np.dot(log_probability,returns)
+        traj_loss_list.append(traj_loss)
+
     
