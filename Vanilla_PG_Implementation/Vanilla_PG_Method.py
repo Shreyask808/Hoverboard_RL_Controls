@@ -136,7 +136,7 @@ def rollout(env,policy_net,device):
 
     return log_probability, rewards
 
-def compute_trajectory_loss(log_probability,rewards,env):
+def compute_trajectory_loss(env,log_probability,rewards):
     returns = []
     steps = len(rewards)
     for i in range(steps):
@@ -158,7 +158,9 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
-batchsize = 32                                                                                                  # Number of 
+batchsize = 32                                                                                                  # Number of Rollouts per gradient step
+device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
+
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 print("")
 print(f"1. Input Dimensions to the NN Policy - {input_dim}")
@@ -166,3 +168,12 @@ print("")
 print(f"2. Output Dimensions to the NN Policy - {output_dim}")
 print("")
 print(f"3. Number of Parameters in NN Policy - {model_parameters}")
+print("")
+print(f"4. Number of Rollouts per Gradient Step - {batchsize}")
+print("")
+print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+
+
+for batch in range(batchsize):
+    log_probability, rewards = rollout(hoverboard,nn_policy,device)
+    traj_loss = compute_trajectory_loss(hoverboard,log_probability,rewards)
