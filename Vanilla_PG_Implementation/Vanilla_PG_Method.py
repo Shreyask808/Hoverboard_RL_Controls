@@ -156,7 +156,7 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
-batchsize = 32                                                                                                  # Number of Rollouts per gradient step
+batchsize = 20                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
 max_batches = 400                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
