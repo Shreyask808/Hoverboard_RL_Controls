@@ -85,7 +85,7 @@ class hoverboardEnv(gymnasium.Env):
         balance_reward = -(th**2 + gamma**2)
         rate_reward = -0.1*(thdot**2 + gammadot**2)
         action_reward = -0.001*np.sum(self.hbdata.ctrl**2)/self.max_T
-        alive_bonus = 0.1
+        alive_bonus = 1
 
         reward = alive_bonus + action_reward + rate_reward + balance_reward
         return reward
@@ -157,9 +157,9 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
-batchsize = 20                                                                                                  # Number of Rollouts per gradient step
+batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
-max_batches = 400                                                                                              # Maximum number of batches in the Training
+max_batches = 1000                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
 optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
 
