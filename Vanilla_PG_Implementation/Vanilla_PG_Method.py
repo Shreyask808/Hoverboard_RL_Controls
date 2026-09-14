@@ -50,8 +50,8 @@ class hoverboardEnv(gymnasium.Env):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.hbmodel,self.hbdata)
 
-        th_ini = self.np_random.uniform(-np.deg2rad(50), np.deg2rad(50))
-        gamma_ini = self.np_random.uniform(-np.deg2rad(50), np.deg2rad(50))
+        th_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
+        gamma_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -85,7 +85,7 @@ class hoverboardEnv(gymnasium.Env):
         balance_reward = -(th**2 + gamma**2)
         rate_reward = -0.1*(thdot**2 + gammadot**2)
         action_reward = -0.001*np.sum(self.hbdata.ctrl**2)/self.max_T
-        alive_bonus = 1
+        alive_bonus = 0.1
 
         reward = alive_bonus + action_reward + rate_reward + balance_reward
         return reward
@@ -108,7 +108,7 @@ class PolicyNet(nn.Module):
     def forward(self,x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        mean = torch.tanh(self.fc3(x)) # Continuous Gaussian Distribution 
+        mean = self.fc3(x) # Continuous Gaussian Distribution 
         std = torch.exp(self.log_std)
         return mean, std
 
@@ -124,7 +124,8 @@ def rollout(env,policy_net,device):
         raw_action = distribution.sample()
         current_log_prob = distribution.log_prob(raw_action).sum(dim=1)
         log_probability.append(current_log_prob)
-        raw_action_np = raw_action.squeeze(0).detach().cpu().numpy()
+        u = torch.tanh(raw_action)
+        raw_action_np = u.squeeze(0).detach().cpu().numpy()
 
         action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
         obs, reward, terminated, truncated, _ = env.step(action)
