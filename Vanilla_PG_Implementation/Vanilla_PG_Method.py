@@ -123,8 +123,7 @@ def rollout(env,policy_net,device):
         mean, std = policy_net(obs_tensor)
         distribution = Normal(mean, std)   
         raw_action = distribution.sample()
-        current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
-        current_log_prob = current_log_prob.detach().numpy()
+        current_log_prob = distribution.log_prob(raw_action).sum(dim=1)
         log_probability.append(current_log_prob)
         raw_action_np = raw_action.squeeze(0).detach().cpu().numpy()
 
@@ -150,10 +149,6 @@ def compute_reward_to_go(env,log_probability,rewards):
         returns.append(reward_to_go)
     return returns
 
-def expectation_across_batches(list,batch_size):
-    expectation = (1/batch_size)*sum(list)
-    return expectation
-
 # =================================================================================================================================================================================================================
 # Mujoco Model and Policy net Definition
 hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
@@ -164,7 +159,7 @@ model_parameters = sum(p.numel() for p in nn_policy.parameters())               
 
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+max_batches = 100                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
 optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
 
@@ -185,15 +180,17 @@ for batch in range(max_batches):
 
     for iter in range(batchsize):
         log_probability, rewards, obs_step = rollout(hoverboard,nn_policy,device)
+        log_probability = torch.stack(log_probability)
         returns = compute_reward_to_go(hoverboard,log_probability,rewards)
-        traj_loss = np.dot(log_probability,returns)
+        reward_to_go = torch.tensor(returns, dtype=torch.float32, device=device).unsqueeze(0)
+        traj_loss = -(reward_to_go @ log_probability).squeeze()
         traj_loss_list.append(traj_loss)
 
-    batch_reward = expectation_across_batches(traj_loss_list,batchsize)
-    batch_reward = torch.tensor(batch_reward, dtype=torch.float32).unsqueeze(0)
+    batch_reward = sum(traj_loss_list)/batchsize
     optimizer.zero_grad()
     batch_reward.backward()
     optimizer.step()
+    print(f"{batch+1}. Batch {batch+1} done ..")
 
 
 
