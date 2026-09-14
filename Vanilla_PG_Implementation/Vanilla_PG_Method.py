@@ -117,7 +117,7 @@ def rollout(env,policy_net,device):
     rewards = []
     obs, info = env.reset()
 
-    for t in range(int(env.max_count*env.hbmodel.opt.timestep)):
+    for t in range(env.max_count):
         obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
         mean, std = policy_net(obs_tensor)
         distribution = Normal(mean, std)   
