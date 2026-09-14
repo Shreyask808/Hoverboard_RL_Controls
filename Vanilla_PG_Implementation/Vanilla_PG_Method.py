@@ -159,7 +159,7 @@ model_parameters = sum(p.numel() for p in nn_policy.parameters())               
 
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+max_batches = 500                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
 optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
 
@@ -192,7 +192,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_500x32.pth")
 print("Weights saved successfully")
 
 
