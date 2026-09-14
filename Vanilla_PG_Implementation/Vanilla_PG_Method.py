@@ -117,7 +117,7 @@ def rollout(env,policy_net,device):
     rewards = []
     obs, info = env.reset()
 
-    for t in range(int(env.max_T)):
+    for t in range(int(env.max_count*env.hbmodel.opt.timestep)):
         obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
         mean, std = policy_net(obs_tensor)
         distribution = Normal(mean, std)   
@@ -157,7 +157,7 @@ nn_policy = PolicyNet(input_dim,64,64,output_dim)                               
 model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
 max_batches = 400                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
 optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
