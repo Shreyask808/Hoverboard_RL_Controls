@@ -28,9 +28,10 @@ class PolicyNet(nn.Module):
     def forward(self,x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        mean = torch.tanh(self.fc3(x)) # Continuous Gaussian Distribution 
+        mean = self.fc3(x) # Continuous Gaussian Distribution 
         std = torch.exp(self.log_std)
         return mean, std
+
 
 time_log = []
 theta = []
@@ -67,6 +68,7 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
         states = np.concatenate([data.qpos,data.qvel])
         inputs = torch.tensor(states, dtype=torch.float32).unsqueeze(0) 
         mean, std = nn_policy(inputs)
+        u = torch.tanh(mean)
         action = mean.squeeze(0).detach().numpy()
         torques = low + (action + 1)*(high - low)/2
         Ml = torques[0]
