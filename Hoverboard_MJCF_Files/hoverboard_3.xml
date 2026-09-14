@@ -1,6 +1,6 @@
  <mujoco model="hoverboard">
     <asset>
-        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
     </asset>
 
     <option gravity="0 0 -9.81" timestep="0.002" integrator="RK4"/>
@@ -17,6 +17,8 @@
             <joint name="chassis_x" type="slide" axis="1 0 0"/>
             <joint name="chassis_y" type="slide" axis="0 1 0"/>
             <joint name="chassis_z" type="slide" axis="0 0 1"/>
+            <joint name="chassis_hinge_z" type="hinge" axis="0 0 1" damping="0.001"/>
+            <joint name="chassis_hinge_x" type="hinge" axis="1 0 0" damping="0.001"/>
             <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
             <geom name="chassis_geom" type="cylinder" size="0.02 0.5" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
@@ -38,11 +40,11 @@
 
                 <body name="pendulum_rod" pos="0 0 0">
                     <joint name="pend_hinge_y" type="hinge" axis="0 1 0" damping="0.0005"/>
-                    <inertial pos="0 0 0.2" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 0.4" size="0.015" rgba="0.6 0.6 0.6 1"/>
+                    <inertial pos="0 0 0.15" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
+                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 0.3" size="0.015" rgba="0.6 0.6 0.6 1"/>
 
-                    <body name="pendulum_mass" pos="0 0 0.4">
-                        <inertial pos="0 0 0" mass="30.0" diaginertia="0.001 0.001 0.001"/>
+                    <body name="pendulum_mass" pos="0 0 0.3">
+                        <inertial pos="0 0 0" mass="50.0" diaginertia="0.001 0.001 0.001"/>
                         <geom name="mass_geom" type="sphere" size="0.04" rgba="0 1 0 1"/>
                     </body>
                 </body>
