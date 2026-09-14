@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 from torch.distributions import Normal
 
 # =================================================================================================================================================================================================================
@@ -136,7 +136,7 @@ def rollout(env,policy_net,device):
         if terminated or truncated:
             break
 
-    return log_probability, rewards
+    return log_probability,rewards, obs
 
 def compute_reward_to_go(env,log_probability,rewards):
     returns = []
@@ -166,6 +166,7 @@ batchsize = 32                                                                  
 device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
 max_batches = 1000                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
+optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
 
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 print("")
@@ -180,10 +181,20 @@ print("")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
 for batch in range(max_batches):
+    traj_loss_list.clear()
+
     for iter in range(batchsize):
-        log_probability, rewards = rollout(hoverboard,nn_policy,device)
+        log_probability, rewards, obs_step = rollout(hoverboard,nn_policy,device)
         returns = compute_reward_to_go(hoverboard,log_probability,rewards)
         traj_loss = np.dot(log_probability,returns)
         traj_loss_list.append(traj_loss)
 
-    
+    batch_reward = expectation_across_batches(traj_loss_list,batchsize)
+    batch_reward = torch.tensor(batch_reward, dtype=torch.float32).unsqueeze(0)
+    optimizer.zero_grad()
+    batch_reward.backward()
+    optimizer.step()
+
+
+
+
