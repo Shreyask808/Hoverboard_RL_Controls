@@ -21,7 +21,7 @@ filename = input("Enter the Filename:")
 def generate_MJCF(R,L,M,h,m,T_max):
     return f""" <mujoco model="hoverboard">
     <asset>
-        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="512"/>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
     </asset>
 
     <option gravity="0 0 -9.81" timestep="0.002" integrator="RK4"/>
@@ -38,6 +38,8 @@ def generate_MJCF(R,L,M,h,m,T_max):
             <joint name="chassis_x" type="slide" axis="1 0 0"/>
             <joint name="chassis_y" type="slide" axis="0 1 0"/>
             <joint name="chassis_z" type="slide" axis="0 0 1"/>
+            <joint name="chassis_hinge_z" type="hinge" axis="0 0 1" damping="0.001"/>
+            <joint name="chassis_hinge_x" type="hinge" axis="1 0 0" damping="0.001"/>
             <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
             <geom name="chassis_geom" type="cylinder" size="0.02 {L/2}" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
