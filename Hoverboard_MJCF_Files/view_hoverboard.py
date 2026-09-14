@@ -12,7 +12,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 
 xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_3.xml"
-weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_500x32.pth"
+weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_1000x32_baseline.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
@@ -54,7 +54,7 @@ pend_hinge_y_qpos_id = model.joint("pend_hinge_y").qposadr[0]
 pend_hinge_x_qvel_id = model.joint("pend_hinge_x").dofadr[0]
 pend_hinge_y_qvel_id = model.joint("pend_hinge_y").dofadr[0]
 
-data.qpos[pend_hinge_y_qpos_id] = np.deg2rad(3)
+data.qpos[pend_hinge_y_qpos_id] = np.deg2rad(0)
 data.qpos[pend_hinge_x_qpos_id] = np.deg2rad(0)
 mujoco.mj_forward(model,data)
 
