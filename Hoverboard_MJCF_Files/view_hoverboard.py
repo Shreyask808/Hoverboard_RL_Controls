@@ -54,6 +54,7 @@ pend_hinge_x_qvel_id = model.joint("pend_hinge_x").dofadr[0]
 pend_hinge_y_qvel_id = model.joint("pend_hinge_y").dofadr[0]
 
 data.qpos[pend_hinge_y_qpos_id] = np.deg2rad(0)
+data.qpos[pend_hinge_x_qpos_id] = np.deg2rad(3)
 mujoco.mj_forward(model,data)
 
 low = model.actuator_ctrlrange[:,0]
