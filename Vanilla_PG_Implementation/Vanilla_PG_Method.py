@@ -140,14 +140,13 @@ def rollout(env,policy_net,device):
 def compute_reward_to_go(env,log_probability,rewards):
     returns = []
     steps = len(rewards)
-
-    for i in range(steps):
-        reward_to_go = rewards[i]
-        for j in range(steps):
-            if j > i:
-                reward_to_go = reward_to_go + env.discount_factor**(j-i)*rewards[j]
-        returns.append(reward_to_go)
-        traj_return = returns[0]
+    G = 0
+    for i in reversed(range(steps)):
+        G = rewards[i] + env.discount_factor*G
+        returns.append(G)
+        
+    returns.reverse()
+    traj_return = returns[0]
     return returns, traj_return
 
 # =================================================================================================================================================================================================================
