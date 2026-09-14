@@ -158,7 +158,7 @@ model_parameters = sum(p.numel() for p in nn_policy.parameters())               
 
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 device = torch.device("cude" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+max_batches = 400                                                                                              # Maximum number of batches in the Training
 traj_loss_list = []
 optimizer = optim.Adam(nn_policy.parameters(), lr = 1e-3)
 
