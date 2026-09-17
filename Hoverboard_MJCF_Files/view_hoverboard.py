@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 
-xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_3.xml"
+xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
 weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_1000x32_baseline.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
