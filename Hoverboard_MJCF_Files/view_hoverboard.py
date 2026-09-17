@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Normal
 
-xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
+xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_3.xml"
 weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_1000x32_baseline.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
@@ -43,7 +43,9 @@ Mr_log = []
 
 input_dim = (model.nq + model.nv)                   
 output_dim = model.nu
-nn_policy = PolicyNet(input_dim,64,64,output_dim)   
+nn_policy = PolicyNet(input_dim,64,64,output_dim)
+nn_policy.load_state_dict(torch.load(weights, map_location="cpu"))
+nn_policy.eval()   
 
 duration= 100
 left_motor_id = model.actuator("left_motor").id
