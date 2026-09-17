@@ -12,7 +12,7 @@ from torch.distributions import Normal
 
 # =================================================================================================================================================================================================================
 # Input Hoverboard xml Model
-xml_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_3.xml"
+xml_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
 
 # =================================================================================================================================================================================================================
 # Class Definition
@@ -201,7 +201,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_1_1000x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_2_1000x32_baseline.pth")
 print("Weights saved successfully")
 
 
