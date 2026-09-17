@@ -16,6 +16,12 @@ m = float(input("Enter Inverted Pendulum Mass m [kg]:"))
 T_max = float(input("Enter Maximum Motor Torque Output T_max [N.m]:"))
 filename = input("Enter the Filename:")
 
+mass = 2
+r = 0.05
+Iy = (1/2)*mass*r**2
+Ix = (1/4)*mass*r**2 + (1/12)*mass*L**2
+I_sphere = (2/5)*m*(1.2*r)**2
+
 #=================================================================================================================================================================================
 # Define MJCF File
 def generate_MJCF(R,L,M,h,m,T_max):
@@ -40,8 +46,8 @@ def generate_MJCF(R,L,M,h,m,T_max):
             <joint name="chassis_z" type="slide" axis="0 0 1"/>
             <joint name="chassis_hinge_z" type="hinge" axis="0 0 1" damping="0.001"/>
             <joint name="chassis_hinge_x" type="hinge" axis="1 0 0" damping="0.001"/>
-            <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-            <geom name="chassis_geom" type="cylinder" size="0.02 {L/2}" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
+            <inertial pos="0 0 0" mass="{mass}" diaginertia="{Ix} {Iy} {Ix}"/>
+            <geom name="chassis_geom" type="cylinder" size="{r} {L/2}" quat="0.707 0.707 0 0" rgba="0.6 0.6 0.6 1"/>
 
             <body name="left_wheel" pos="0 {L/2} 0">
                 <joint name="left_hinge" type="hinge" axis="0 1 0" damping="0.001"/>
@@ -61,12 +67,12 @@ def generate_MJCF(R,L,M,h,m,T_max):
 
                 <body name="pendulum_rod" pos="0 0 0">
                     <joint name="pend_hinge_y" type="hinge" axis="0 1 0" damping="0.0005"/>
-                    <inertial pos="0 0 {h/2}" mass="1e-6" diaginertia="1e-8 1e-8 1e-8"/>
-                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 {h}" size="0.015" rgba="0.6 0.6 0.6 1"/>
+                    <inertial pos="0 0 {h/2}" mass="{mass}" diaginertia="{Ix} {Iy} {Ix}"/>
+                    <geom name="rod_geom" type="capsule" fromto="0 0 0 0 0 {h}" size="{r}" rgba="0.6 0.6 0.6 1"/>
 
                     <body name="pendulum_mass" pos="0 0 {h}">
-                        <inertial pos="0 0 0" mass="{m}" diaginertia="0.001 0.001 0.001"/>
-                        <geom name="mass_geom" type="sphere" size="0.04" rgba="0 1 0 1"/>
+                        <inertial pos="0 0 0" mass="{m}" diaginertia="{I_sphere} {I_sphere} {I_sphere}"/>
+                        <geom name="mass_geom" type="sphere" size="{1.2*r}" rgba="0 1 0 1"/>
                     </body>
                 </body>
             </body>
