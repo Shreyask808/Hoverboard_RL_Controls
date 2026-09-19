@@ -27,7 +27,8 @@ I_sphere = (2/5)*m*(1.2*r)**2
 def generate_MJCF(R,L,M,h,m,T_max):
     return f""" <mujoco model="hoverboard">
     <asset>
-        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+        <texture name="groundplane" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.9 0.9 0.9" width="512" height="3072"/>
+        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
     </asset>
 
     <option gravity="0 0 -9.81" timestep="0.002" integrator="RK4"/>
@@ -38,7 +39,7 @@ def generate_MJCF(R,L,M,h,m,T_max):
     </default>
 
     <worldbody>
-        <geom name="floor" type="plane" size="0 0 0.1" rgba="0.8 0.8 0.8 1"/>
+        <geom name="floor" type="plane" size="0 0 0.1" rgba="0.8 0.8 0.8 1" material="groundplane"/>
         
         <body name="chassis" pos="0 0 {R}">
             <joint name="chassis_x" type="slide" axis="1 0 0"/>
