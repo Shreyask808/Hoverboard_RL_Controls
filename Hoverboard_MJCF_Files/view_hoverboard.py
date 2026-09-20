@@ -12,7 +12,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 
 xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
-weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_3_200x32_baseline.pth"
+weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_3_1200x32_baseline.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
@@ -106,7 +106,7 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
         thetadot_log.append(data.qvel[pend_hinge_y_qvel_id])
         gammadot_log.append(data.qvel[pend_hinge_x_qvel_id])
 
-        Ml_log.append(Mr)
+        Ml_log.append(Ml)
         Mr_log.append(Mr)
 
         time_until_next_step = model.opt.timestep - (time.time() - step_start)
