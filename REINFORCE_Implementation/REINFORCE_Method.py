@@ -22,20 +22,43 @@ class hoverboardEnv(gymnasium.Env):
         self.hbmodel = mujoco.MjModel.from_xml_path(xml_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
 
+        self.h = self.hbmodel.body("pendulum_mass").pos[2]
+        self.g = self.hbmodel.opt.gravity[2]
+        self.angle_scale = 1
+        self.angular_velocity_scale = np.sqrt(self.h/self.g)
+
         obs_dim = self.hbmodel.nq + self.hbmodel.nv
         ctrl_dim = self.hbmodel.nu
+
         self.max_T = np.sum(self.hbmodel.actuator_ctrlrange[:,1]**2)
         self.step_count = 0
+
         self.discount_factor = 0.99
+
         self.Low = self.hbmodel.actuator_ctrlrange[:,0]
         self.High = self.hbmodel.actuator_ctrlrange[:,1]
-        self.max_count = int(120/self.hbmodel.opt.timestep)
 
-        self.hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
-        self.hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
+        self.max_count = int(60/self.hbmodel.opt.timestep)
 
-        self.hinge_x_qvel_id = self.hbmodel.joint("pend_hinge_x").dofadr[0]
-        self.hinge_y_qvel_id = self.hbmodel.joint("pend_hinge_y").dofadr[0]
+        hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
+        hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
+        hinge_x_qvel_id = self.hbmodel.joint("pend_hinge_x").dofadr[0]
+        hinge_y_qvel_id = self.hbmodel.joint("pend_hinge_y").dofadr[0]
+
+        chassis_hinge_z_id = self.hbmodel.joint("chassis_hinge_z").qposadr[0]
+        chassis_hinge_x_id = self.hbmodel.joint("chassis_hinge_x").qposadr[0]
+        chassis_hinge_z_qvel_id = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
+        chassis_hinge_x_qvel_id = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
+
+        self.th = self.hbdata.qpos[hinge_y_qpos_id]
+        self.gamma = self.hbdata.qpos[hinge_x_qpos_id]
+        self.psi = self.hbdata.qpos[chassis_hinge_z_id]
+        self.xi = self.hbdata.qpos[chassis_hinge_x_id]
+
+        self.thdot = self.hbdata.qvel[hinge_y_qvel_id]
+        self.gammadot = self.hbdata.qvel[hinge_x_qvel_id]
+        self.psidot = self.hbdata[chassis_hinge_z_qvel_id]
+        self.xidot = self.hbdata[chassis_hinge_x_qvel_id]
 
         self.observation_space = gymnasium.spaces.Box(
             low= -np.inf, high= np.inf, shape=(obs_dim,), dtype=np.float64
@@ -75,15 +98,12 @@ class hoverboardEnv(gymnasium.Env):
         return obs, reward, terminated, truncated,{}
     
     def _get_obs(self):
+        
         return np.concatenate([self.hbdata.qpos, self.hbdata.qvel])
 
     def _compute_reward(self):
-        th = self.hbdata.qpos[self.hinge_y_qpos_id]
-        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
-        thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
-        gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
-        balance_reward = -(th**2 + gamma**2)
-        rate_reward = -0.1*(thdot**2 + gammadot**2)
+        balance_reward = -(self.th**2 + self.gamma**2)
+        rate_reward = -0.1*(self.thdot**2 + self.gammadot**2)
         action_reward = -0.001*np.sum(self.hbdata.ctrl**2)/self.max_T
         alive_bonus = 1
 
@@ -91,11 +111,7 @@ class hoverboardEnv(gymnasium.Env):
         return reward
 
     def _check_done(self):
-        th = self.hbdata.qpos[self.hinge_y_qpos_id]
-        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
-
-        return bool(abs(th) >= np.deg2rad(60) or abs(gamma) >= np.deg2rad(60))
-
+        return bool(abs(self.th) >= np.deg2rad(45) or abs(self.gamma) >= np.deg2rad(45) or abs(self.xi) >= np.deg2rad(2))
 
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
@@ -152,13 +168,17 @@ def compute_reward_to_go(env,log_probability,rewards):
 # =================================================================================================================================================================================================================
 # Mujoco Model and Policy net Definition
 hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
 input_dim = (hoverboard.hbmodel.nq + hoverboard.hbmodel.nv)                                                     # Inputs to the Policy Net (All qpos + qvel)
-output_dim = hoverboard.hbmodel.nu                                                                            # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
-nn_policy = PolicyNet(input_dim,64,64,output_dim)                                                               # Control Policy
+output_dim = hoverboard.hbmodel.nu                                                                              # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
+nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                              # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
 
+angle_scale = 1                                                                                                 # Angle Scale [rad^-1]
+g = hoverboard.hbmodel.opt.gravity[2]
+anglular_speed_scale = np.sqrt(hoverboard.h/np.abs(g))                                                          # Angular Velocity scale [sec/rad]
+
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
 max_batches = 1000                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
@@ -194,7 +214,7 @@ for batch in range(max_batches):
     baseline = np.mean(avg_reward_to_go_list)
     all_rewards_tensor = torch.cat(reward_to_go_list)
     all_log_probs_tensor = torch.cat(log_probability_list)
-    loss_function = -torch.dot(all_log_probs_tensor, (all_rewards_tensor - baseline) )
+    loss_function = -torch.dot(all_log_probs_tensor, (all_rewards_tensor - baseline))
     batch_reward = loss_function/batchsize
     optimizer.zero_grad()
     batch_reward.backward()
