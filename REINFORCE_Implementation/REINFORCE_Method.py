@@ -39,7 +39,7 @@ class hoverboardEnv(gymnasium.Env):
         self.Low = self.hbmodel.actuator_ctrlrange[:,0]
         self.High = self.hbmodel.actuator_ctrlrange[:,1]
 
-        self.max_count = int(60/self.hbmodel.opt.timestep)
+        self.max_count = int(10/self.hbmodel.opt.timestep)
 
         self.hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
         self.hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
@@ -217,7 +217,7 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-max_batches = 200                                                                                              # Maximum number of batches in the Training
+max_batches = 1200                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
 avg_reward_to_go_list = []
