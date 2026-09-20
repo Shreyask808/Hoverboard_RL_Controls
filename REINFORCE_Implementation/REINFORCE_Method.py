@@ -217,7 +217,7 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+max_batches = 200                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
 avg_reward_to_go_list = []
@@ -259,7 +259,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_2_1000x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Vanilla_PG_Implementation/attempt_3_200x32_baseline.pth")
 print("Weights saved successfully")
 
 
