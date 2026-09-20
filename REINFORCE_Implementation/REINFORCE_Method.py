@@ -24,10 +24,11 @@ class hoverboardEnv(gymnasium.Env):
 
         self.h = self.hbmodel.body("pendulum_mass").pos[2]
         self.g = self.hbmodel.opt.gravity[2]
+        #self.R = self.hbmodel.geom("right_wheel_geom").size[0]
         self.angle_scale = 1
-        self.angular_velocity_scale = np.sqrt(self.h/self.g)
+        self.angular_velocity_scale = np.sqrt(self.h/np.abs(self.g))
 
-        obs_dim = self.hbmodel.nq + self.hbmodel.nv
+        obs_dim = 8
         ctrl_dim = self.hbmodel.nu
 
         self.max_T = np.sum(self.hbmodel.actuator_ctrlrange[:,1]**2)
@@ -40,26 +41,29 @@ class hoverboardEnv(gymnasium.Env):
 
         self.max_count = int(60/self.hbmodel.opt.timestep)
 
-        hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
-        hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
-        hinge_x_qvel_id = self.hbmodel.joint("pend_hinge_x").dofadr[0]
-        hinge_y_qvel_id = self.hbmodel.joint("pend_hinge_y").dofadr[0]
+        self.hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
+        self.hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
+        self.hinge_x_qvel_id = self.hbmodel.joint("pend_hinge_x").dofadr[0]
+        self.hinge_y_qvel_id = self.hbmodel.joint("pend_hinge_y").dofadr[0]
 
-        chassis_hinge_z_id = self.hbmodel.joint("chassis_hinge_z").qposadr[0]
-        chassis_hinge_x_id = self.hbmodel.joint("chassis_hinge_x").qposadr[0]
-        chassis_hinge_z_qvel_id = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
-        chassis_hinge_x_qvel_id = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
+        self.chassis_hinge_z_id = self.hbmodel.joint("chassis_hinge_z").qposadr[0]
+        self.chassis_hinge_x_id = self.hbmodel.joint("chassis_hinge_x").qposadr[0]
+        self.chassis_hinge_z_qvel_id = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
+        self.chassis_hinge_x_qvel_id = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
 
-        self.th = self.hbdata.qpos[hinge_y_qpos_id]
-        self.gamma = self.hbdata.qpos[hinge_x_qpos_id]
-        self.psi = self.hbdata.qpos[chassis_hinge_z_id]
-        self.xi = self.hbdata.qpos[chassis_hinge_x_id]
+        self.chassis_x_id = self.hbmodel.joint("chassis_x").qposadr[0]
+        self.chassis_y_id = self.hbmodel.joint("chassis_y").qposadr[0]
+        self.chassis_z_id = self.hbmodel.joint("chassis_z").qposadr[0]
 
-        self.thdot = self.hbdata.qvel[hinge_y_qvel_id]
-        self.gammadot = self.hbdata.qvel[hinge_x_qvel_id]
-        self.psidot = self.hbdata[chassis_hinge_z_qvel_id]
-        self.xidot = self.hbdata[chassis_hinge_x_qvel_id]
+        self.chassis_x_qvel_id = self.hbmodel.joint("chassis_x").dofadr[0]
+        self.chassis_y_qvel_id = self.hbmodel.joint("chassis_y").dofadr[0]
+        self.chassis_z_qvel_id = self.hbmodel.joint("chassis_z").dofadr[0]
 
+        self.left_hinge_id = self.hbmodel.joint("left_hinge").qposadr[0]
+        self.right_hinge_id = self.hbmodel.joint("right_hinge").qposadr[0]
+        self.left_hinge_qvel_id = self.hbmodel.joint("left_hinge").dofadr[0]
+        self.right_hinge_qvel_id = self.hbmodel.joint("right_hinge").dofadr[0]
+        
         self.observation_space = gymnasium.spaces.Box(
             low= -np.inf, high= np.inf, shape=(obs_dim,), dtype=np.float64
         )
@@ -78,12 +82,27 @@ class hoverboardEnv(gymnasium.Env):
         thdot_ini = 0
         gammadot_ini = 0
 
-        self.hbdata.qpos[self.hinge_x_qpos_id] = gamma_ini
-        self.hbdata.qpos[self.hinge_y_qpos_id] = th_ini
-        self.hbdata.qvel[self.hinge_x_qvel_id] = gammadot_ini
+        self.hbdata.qpos[self.hinge_y_qpos_id] = th_ini             # th_ini
+        self.hbdata.qpos[self.hinge_x_qpos_id] = gamma_ini          # gamma_ini
+        self.hbdata.qpos[self.chassis_hinge_z_id] = 0               # psi_ini
+        self.hbdata.qpos[self.chassis_hinge_x_id] = 0               # xi_ini (roll)
+        self.hbdata.qpos[self.chassis_x_id] = 0                     # chassis_x
+        self.hbdata.qpos[self.chassis_y_id] = 0                     # chassis_y
+        self.hbdata.qpos[self.chassis_z_id] = 0                     # chassis_z
+        self.hbdata.qpos[self.left_hinge_id] = 0
+        self.hbdata.qpos[self.right_hinge_id] = 0
+
         self.hbdata.qvel[self.hinge_y_qvel_id] = thdot_ini
+        self.hbdata.qvel[self.hinge_x_qvel_id] = gammadot_ini
+        self.hbdata.qvel[self.chassis_hinge_z_qvel_id] = 0
+        self.hbdata.qvel[self.chassis_hinge_x_qvel_id] = 0
+        self.hbdata.qvel[self.chassis_x_qvel_id] = 0
+        self.hbdata.qvel[self.chassis_y_qvel_id] = 0
+        self.hbdata.qvel[self.chassis_z_qvel_id] = 0
+        self.hbdata.qvel[self.left_hinge_qvel_id] = 0
+        self.hbdata.qvel[self.right_hinge_qvel_id] = 0
         self.step_count = 0
-        
+
         mujoco.mj_forward(self.hbmodel,self.hbdata)
         return self._get_obs(), {}
 
@@ -98,12 +117,32 @@ class hoverboardEnv(gymnasium.Env):
         return obs, reward, terminated, truncated,{}
     
     def _get_obs(self):
-        
-        return np.concatenate([self.hbdata.qpos, self.hbdata.qvel])
+        angles = []
+        rates = []
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        psi = self.hbdata.qpos[self.chassis_hinge_z_id]
+        xi = self.hbdata.qpos[self.chassis_hinge_x_id]
+
+        thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
+        gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
+        psidot = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
+        xidot = self.hbdata.qvel[self.chassis_hinge_x_qvel_id]
+
+        angles = [th*self.angle_scale, gamma*self.angle_scale, psi*self.angle_scale, xi*self.angle_scale]
+        rates = [thdot*self.angular_velocity_scale, gammadot*self.angular_velocity_scale, psidot*self.angular_velocity_scale, xidot*self.angular_velocity_scale]
+        observation = np.concatenate([angles, rates])
+        return observation
 
     def _compute_reward(self):
-        balance_reward = -(self.th**2 + self.gamma**2)
-        rate_reward = -0.1*(self.thdot**2 + self.gammadot**2)
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+
+        thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
+        gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
+
+        balance_reward = -(th**2 + gamma**2)
+        rate_reward = -0.1*(thdot**2 + gammadot**2)
         action_reward = -0.001*np.sum(self.hbdata.ctrl**2)/self.max_T
         alive_bonus = 1
 
@@ -111,7 +150,11 @@ class hoverboardEnv(gymnasium.Env):
         return reward
 
     def _check_done(self):
-        return bool(abs(self.th) >= np.deg2rad(45) or abs(self.gamma) >= np.deg2rad(45) or abs(self.xi) >= np.deg2rad(2))
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        xi = self.hbdata.qpos[self.chassis_hinge_x_id]
+
+        return bool(abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or abs(xi) >= np.deg2rad(2))
 
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
@@ -169,15 +212,10 @@ def compute_reward_to_go(env,log_probability,rewards):
 # Mujoco Model and Policy net Definition
 hoverboard = hoverboardEnv(xml_path)                                                                            # Hoverboard Model Definition 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                                           # Device to compute gradients
-input_dim = (hoverboard.hbmodel.nq + hoverboard.hbmodel.nv)                                                     # Inputs to the Policy Net (All qpos + qvel)
+input_dim = 8                                                                                                   # Inputs to the Policy Net
 output_dim = hoverboard.hbmodel.nu                                                                              # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
-nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                              # Control Policy
-model_parameters = sum(p.numel() for p in nn_policy.parameters())                                               # Number of Parameters in the Model
-
-angle_scale = 1                                                                                                 # Angle Scale [rad^-1]
-g = hoverboard.hbmodel.opt.gravity[2]
-anglular_speed_scale = np.sqrt(hoverboard.h/np.abs(g))                                                          # Angular Velocity scale [sec/rad]
-
+nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
+model_parameters = sum(p.numel() for p in nn_policy.parameters())
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
 max_batches = 1000                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
