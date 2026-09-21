@@ -142,13 +142,13 @@ class hoverboardEnv(gymnasium.Env):
         gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
 
-        balance_reward = -10*(th**2 + gamma**2)*self.angle_scale
+        balance_reward = -100*(th**2 + gamma**2)*self.angle_scale
         rate_reward = -0.5*(thdot**2 + gammadot**2)*self.angular_velocity_scale**2
         action_reward = -0.1*np.sum(self.hbdata.ctrl**2)/self.max_T
         yaw_reward = -0.5*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
 
-        reward = alive_bonus + action_reward + rate_reward + balance_reward
+        reward = alive_bonus + action_reward + rate_reward + balance_reward + yaw_reward
         return reward
 
     def _check_done(self):
@@ -178,23 +178,24 @@ def rollout(env,policy_net,device):
     rewards = []
     obs, info = env.reset()
 
-    for t in range(env.max_count):
-        obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
-        mean, std = policy_net(obs_tensor)
-        distribution = Normal(mean, std)   
-        raw_action = distribution.sample()
-        current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
-        log_probability.append(current_log_prob)
-        u = torch.tanh(raw_action)
-        raw_action_np = u.squeeze(0).detach().cpu().numpy()
+    with torch.no_grad():
+        for t in range(env.max_count):
+            obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
+            mean, std = policy_net(obs_tensor)
+            distribution = Normal(mean, std)   
+            raw_action = distribution.sample()
+            current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
+            log_probability.append(current_log_prob)
+            u = torch.tanh(raw_action)
+            raw_action_np = u.squeeze(0).detach().cpu().numpy()
 
-        action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
-        obs, reward, terminated, truncated, _ = env.step(action)
+            action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
+            obs, reward, terminated, truncated, _ = env.step(action)
 
-        rewards.append(reward)        
+            rewards.append(reward)        
 
-        if terminated or truncated:
-            break
+            if terminated or truncated:
+                break
 
     return log_probability,rewards, obs
 
@@ -261,7 +262,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_5_250x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_6_250x32_baseline.pth")
 print("Weights saved successfully")
 
 
