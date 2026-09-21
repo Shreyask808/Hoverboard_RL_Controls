@@ -174,29 +174,34 @@ class PolicyNet(nn.Module):
         return mean, std
 
 def rollout(env,policy_net,device):
-    log_probability = []
+    obs_list = []
+    raw_action_list = []
     rewards = []
     obs, info = env.reset()
 
-    for t in range(env.max_count):
-        obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
-        mean, std = policy_net(obs_tensor)
-        distribution = Normal(mean, std)   
-        raw_action = distribution.sample()
-        current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
-        log_probability.append(current_log_prob)
-        u = torch.tanh(raw_action)
-        raw_action_np = u.squeeze(0).detach().cpu().numpy()
+    with torch.no_grad():
+        for t in range(env.max_count):
+            obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
+            mean, std = policy_net(obs_tensor)
+            distribution = Normal(mean, std)   
+            raw_action = distribution.sample()
+            #current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
+            #log_probability.append(current_log_prob)
+            u = torch.tanh(raw_action)
+            raw_action_np = u.squeeze(0).detach().cpu().numpy()
 
-        action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
-        obs, reward, terminated, truncated, _ = env.step(action)
+            obs_list.append(obs)
+            raw_action_list.append(raw_action.squeeze(0))
+            
+            action = env.Low + (raw_action_np + 1)*(env.High - env.Low)/2
+            obs, reward, terminated, truncated, _ = env.step(action)
 
-        rewards.append(reward)        
+            rewards.append(reward)        
 
-        if terminated or truncated:
-            break
+            if terminated or truncated:
+                break
 
-    return log_probability,rewards, obs
+    return obs_list,raw_action_list,rewards, obs
 
 def compute_reward_to_go(env,log_probability,rewards):
     returns = []
@@ -243,8 +248,11 @@ for batch in range(max_batches):
     avg_reward_to_go_list.clear()
 
     for iter in range(batchsize):
-        log_probability, rewards, obs_step = rollout(hoverboard,nn_policy,device)
-        log_probability = torch.stack(log_probability)
+        observation_list,action_list,rewards,obs_step = rollout(hoverboard,nn_policy,device)
+        observation_batch = torch.tensor(np.array(observation_list), dtype=torch.float32, device=device)
+        action_batch = torch.stack(action_list)
+        mean, std = nn_policy(observation_batch)
+        log_probability = Normal(mean, std).log_prob(action_batch).sum(dim=1)
         log_probability_list.append(log_probability)
         returns, traj_return = compute_reward_to_go(hoverboard,log_probability,rewards)
         return_tensors = torch.tensor(returns, dtype=torch.float32, device=device)
