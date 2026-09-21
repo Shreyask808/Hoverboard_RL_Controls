@@ -142,7 +142,7 @@ class hoverboardEnv(gymnasium.Env):
         gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
 
-        balance_reward = -20*(th**2 + gamma**2)*self.angle_scale
+        balance_reward = np.exp(-20*(th**2 + gamma**2)*self.angle_scale)
         rate_reward = -0.5*(thdot**2 + gammadot**2)*self.angular_velocity_scale**2
         action_reward = -0.1*np.sum(self.hbdata.ctrl**2)/self.max_T
         yaw_reward = -0.5*yawrate**2*self.angular_velocity_scale**2
@@ -152,11 +152,10 @@ class hoverboardEnv(gymnasium.Env):
         return reward
 
     def _check_done(self):
-        th = self.hbdata.qpos[self.hinge_y_qpos_id]
-        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        z = self.hbdata.qpos[self.chassis_z_id]
         xi = self.hbdata.qpos[self.chassis_hinge_x_id]
 
-        return bool(abs(xi) >= np.deg2rad(2))  #abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or
+        return bool(abs(xi) >= np.deg2rad(2) or z >= 0.1)  #abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or
 
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
@@ -203,7 +202,7 @@ def rollout(env,policy_net,device):
 
     return obs_list,raw_action_list,rewards, obs
 
-def compute_reward_to_go(env,log_probability,rewards):
+def compute_reward_to_go(env,rewards):
     returns = []
     steps = len(rewards)
     G = 0
@@ -254,7 +253,7 @@ for batch in range(max_batches):
         mean, std = nn_policy(observation_batch)
         log_probability = Normal(mean, std).log_prob(action_batch).sum(dim=1)
         log_probability_list.append(log_probability)
-        returns, traj_return = compute_reward_to_go(hoverboard,log_probability,rewards)
+        returns, traj_return = compute_reward_to_go(hoverboard,rewards)
         return_tensors = torch.tensor(returns, dtype=torch.float32, device=device)
         reward_to_go_list.append(return_tensors)
         avg_reward_to_go_list.append(traj_return)
@@ -269,7 +268,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_6_250x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_7_250x32_baseline.pth")
 print("Weights saved successfully")
 
 
