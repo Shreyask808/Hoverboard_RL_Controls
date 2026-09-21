@@ -1,10 +1,8 @@
 import mujoco
 import mujoco.viewer
 import numpy as np
-import time
 import matplotlib.pyplot as plt
 import time
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,7 +10,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 
 xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
-weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_3_1200x32_baseline.pth"
+weights = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_4_1000x32_baseline.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
