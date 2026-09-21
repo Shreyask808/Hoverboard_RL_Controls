@@ -34,7 +34,7 @@ class hoverboardEnv(gymnasium.Env):
         self.max_T = np.sum(self.hbmodel.actuator_ctrlrange[:,1]**2)
         self.step_count = 0
 
-        self.discount_factor = 0.99
+        self.discount_factor = 0.999
 
         self.Low = self.hbmodel.actuator_ctrlrange[:,0]
         self.High = self.hbmodel.actuator_ctrlrange[:,1]
@@ -140,10 +140,12 @@ class hoverboardEnv(gymnasium.Env):
 
         thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
         gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
+        yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
 
         balance_reward = -10*(th**2 + gamma**2)*self.angle_scale
         rate_reward = -0.5*(thdot**2 + gammadot**2)*self.angular_velocity_scale**2
         action_reward = -0.1*np.sum(self.hbdata.ctrl**2)/self.max_T
+        yaw_reward = -0.5*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
 
         reward = alive_bonus + action_reward + rate_reward + balance_reward
@@ -154,7 +156,7 @@ class hoverboardEnv(gymnasium.Env):
         gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
         xi = self.hbdata.qpos[self.chassis_hinge_x_id]
 
-        return bool(abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or abs(xi) >= np.deg2rad(2))
+        return bool(abs(xi) >= np.deg2rad(2))  #abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or
 
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
@@ -217,7 +219,7 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+max_batches = 250                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
 avg_reward_to_go_list = []
@@ -259,7 +261,7 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_4_1000x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_5_250x32_baseline.pth")
 print("Weights saved successfully")
 
 
