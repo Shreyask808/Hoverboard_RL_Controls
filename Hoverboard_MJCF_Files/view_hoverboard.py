@@ -55,7 +55,6 @@ pend_hinge_y_qpos_id = model.joint("pend_hinge_y").qposadr[0]
 pend_hinge_x_qvel_id = model.joint("pend_hinge_x").dofadr[0]
 pend_hinge_y_qvel_id = model.joint("pend_hinge_y").dofadr[0]
 
-
 chassis_hinge_z_id = model.joint("chassis_hinge_z").qposadr[0]
 chassis_hinge_x_id = model.joint("chassis_hinge_x").qposadr[0]
 chassis_hinge_z_qvel_id = model.joint("chassis_hinge_z").dofadr[0]
