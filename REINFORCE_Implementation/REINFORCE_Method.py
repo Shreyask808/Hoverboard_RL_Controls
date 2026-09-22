@@ -84,23 +84,10 @@ class hoverboardEnv(gymnasium.Env):
 
         self.hbdata.qpos[self.hinge_y_qpos_id] = th_ini             # th_ini
         self.hbdata.qpos[self.hinge_x_qpos_id] = gamma_ini          # gamma_ini
-        self.hbdata.qpos[self.chassis_hinge_z_id] = 0               # psi_ini
-        self.hbdata.qpos[self.chassis_hinge_x_id] = 0               # xi_ini (roll)
-        self.hbdata.qpos[self.chassis_x_id] = 0                     # chassis_x
-        self.hbdata.qpos[self.chassis_y_id] = 0                     # chassis_y
-        self.hbdata.qpos[self.chassis_z_id] = 0                     # chassis_z
-        self.hbdata.qpos[self.left_hinge_id] = 0
-        self.hbdata.qpos[self.right_hinge_id] = 0
 
         self.hbdata.qvel[self.hinge_y_qvel_id] = thdot_ini
         self.hbdata.qvel[self.hinge_x_qvel_id] = gammadot_ini
-        self.hbdata.qvel[self.chassis_hinge_z_qvel_id] = 0
-        self.hbdata.qvel[self.chassis_hinge_x_qvel_id] = 0
-        self.hbdata.qvel[self.chassis_x_qvel_id] = 0
-        self.hbdata.qvel[self.chassis_y_qvel_id] = 0
-        self.hbdata.qvel[self.chassis_z_qvel_id] = 0
-        self.hbdata.qvel[self.left_hinge_qvel_id] = 0
-        self.hbdata.qvel[self.right_hinge_qvel_id] = 0
+
         self.step_count = 0
 
         mujoco.mj_forward(self.hbmodel,self.hbdata)
@@ -223,7 +210,7 @@ output_dim = hoverboard.hbmodel.nu                                              
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
 batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-max_batches = 250                                                                                              # Maximum number of batches in the Training
+max_batches = 1000                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
 avg_reward_to_go_list = []
@@ -240,6 +227,8 @@ print("")
 print(f"4. Number of Rollouts per Gradient Step - {batchsize}")
 print("")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+
+t0 = time.time()
 
 for batch in range(max_batches):
     log_probability_list.clear()
@@ -268,8 +257,18 @@ for batch in range(max_batches):
     optimizer.step()
     print(f"{batch+1}. Batch {batch+1} done ...")
 
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_7_250x32_baseline.pth")
+tf = time.time()
+wall_clock_time_min = np.floor((tf -t0)/60)
+wall_clock_time_sec = (tf - t0)%60
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_8_1000x32_baseline.pth")
+print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+print("")
 print("Weights saved successfully")
+print("")
+print(f"Wall Clock Time - {wall_clock_time_min} [min] {wall_clock_time_sec} [sec]")
+print("")
+print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+
 
 
 
