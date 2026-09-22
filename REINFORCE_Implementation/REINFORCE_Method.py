@@ -131,8 +131,8 @@ class hoverboardEnv(gymnasium.Env):
 
         balance_reward = np.exp(-20*(th**2 + gamma**2)*self.angle_scale) - 1 
         rate_reward = -0.5*(thdot**2 + gammadot**2)*self.angular_velocity_scale**2
-        action_reward = -0.1*np.sum(self.hbdata.ctrl**2)/self.max_T
-        yaw_reward = -0.5*yawrate**2*self.angular_velocity_scale**2
+        action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
+        yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
 
         reward = alive_bonus + action_reward + rate_reward + balance_reward + yaw_reward
