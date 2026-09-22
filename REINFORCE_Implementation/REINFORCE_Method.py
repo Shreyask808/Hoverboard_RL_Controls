@@ -97,15 +97,13 @@ class hoverboardEnv(gymnasium.Env):
         self.hbdata.ctrl[:] = action
         mujoco.mj_step(self.hbmodel,self.hbdata)
         obs = self._get_obs()
-        reward = self._compute_reward()
         terminated = self._check_done()
+        reward = self._compute_reward(terminated)
         self.step_count += 1
         truncated = self.step_count >= self.max_count
         return obs, reward, terminated, truncated,{}
     
     def _get_obs(self):
-        angles = []
-        rates = []
         th = self.hbdata.qpos[self.hinge_y_qpos_id]
         gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
         psi = self.hbdata.qpos[self.chassis_hinge_z_id]
@@ -121,28 +119,31 @@ class hoverboardEnv(gymnasium.Env):
         observation = np.concatenate([angles, rates])
         return observation
 
-    def _compute_reward(self):
+    def _compute_reward(self, terminated):
         th = self.hbdata.qpos[self.hinge_y_qpos_id]
         gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        xi = self.hbdata.qpos[self.chassis_hinge_x_id]
 
         thdot = self.hbdata.qvel[self.hinge_y_qvel_id]
         gammadot = self.hbdata.qvel[self.hinge_x_qvel_id]
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
+        xidot = self.hbdata.qvel[self.chassis_hinge_x_qvel_id]
 
-        balance_reward = np.exp(-20*(th**2 + gamma**2)*self.angle_scale) - 1 
-        rate_reward = -0.5*(thdot**2 + gammadot**2)*self.angular_velocity_scale**2
+        balance_reward = ((-20*(th**2 + gamma**2)*self.angle_scale)) + ((-2000*xi**2*self.angle_scale))
+        rate_reward = -0.2*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
         action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
         yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
 
-        reward = alive_bonus + action_reward + rate_reward + balance_reward + yaw_reward
+        reward = alive_bonus + action_reward + rate_reward + balance_reward + yaw_reward - 10*int(terminated)
         return reward
 
     def _check_done(self):
         z = self.hbdata.qpos[self.chassis_z_id]
         xi = self.hbdata.qpos[self.chassis_hinge_x_id]
-
-        return bool(abs(xi) >= np.deg2rad(2) or z >= 0.1)  #abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45) or
+        th = self.hbdata.qpos[self.hinge_y_qpos_id]
+        gamma = self.hbdata.qpos[self.hinge_x_qpos_id]
+        return bool(abs(xi) >= np.deg2rad(5) or z >= 0.1 or abs(th) >= np.deg2rad(45) or abs(gamma) >= np.deg2rad(45))
 
 class PolicyNet(nn.Module):
     def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
@@ -150,7 +151,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(in_dim, l1_dim)
         self.fc2 = nn.Linear(l1_dim, l2_dim)
         self.fc3 = nn.Linear(l2_dim, out_dim)
-        self.log_std = nn.Parameter(torch.zeros(out_dim))
+        self.log_std = nn.Parameter(-1.5*torch.ones(out_dim))
 
     def forward(self,x):
         x = F.relu(self.fc1(x))
@@ -171,8 +172,6 @@ def rollout(env,policy_net,device):
             mean, std = policy_net(obs_tensor)
             distribution = Normal(mean, std)   
             raw_action = distribution.sample()
-            #current_log_prob = distribution.log_prob(raw_action).sum(dim=1).squeeze(0)
-            #log_probability.append(current_log_prob)
             u = torch.tanh(raw_action)
             raw_action_np = u.squeeze(0).detach().cpu().numpy()
 
@@ -187,7 +186,7 @@ def rollout(env,policy_net,device):
             if terminated or truncated:
                 break
 
-    return obs_list,raw_action_list,rewards, obs
+    return obs_list,raw_action_list,rewards, obs, t
 
 def compute_reward_to_go(env,rewards):
     returns = []
@@ -234,9 +233,10 @@ for batch in range(max_batches):
     log_probability_list.clear()
     reward_to_go_list.clear()
     avg_reward_to_go_list.clear()
+    episode_length = 0
 
     for iter in range(batchsize):
-        observation_list,action_list,rewards,obs_step = rollout(hoverboard,nn_policy,device)
+        observation_list,action_list,rewards,obs_step, step_cnt = rollout(hoverboard,nn_policy,device)
         observation_batch = torch.tensor(np.array(observation_list), dtype=torch.float32, device=device)
         action_batch = torch.stack(action_list)
         mean, std = nn_policy(observation_batch)
@@ -246,6 +246,7 @@ for batch in range(max_batches):
         return_tensors = torch.tensor(returns, dtype=torch.float32, device=device)
         reward_to_go_list.append(return_tensors)
         avg_reward_to_go_list.append(traj_return)
+        episode_length += step_cnt
 
     baseline = np.mean(avg_reward_to_go_list)
     all_rewards_tensor = torch.cat(reward_to_go_list)
@@ -255,12 +256,13 @@ for batch in range(max_batches):
     optimizer.zero_grad()
     batch_reward.backward()
     optimizer.step()
-    print(f"{batch+1}. Batch {batch+1} done ...")
+    episode_length = episode_length*hoverboard.hbmodel.opt.timestep/batchsize
+    print(f"{batch+1}. Batch {batch+1} done, Avg Episode Length - {episode_length} [sec]...................")
 
 tf = time.time()
 wall_clock_time_min = np.floor((tf -t0)/60)
 wall_clock_time_sec = (tf - t0)%60
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_8_1000x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_9_1000x32_baseline.pth")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 print("")
 print("Weights saved successfully")
