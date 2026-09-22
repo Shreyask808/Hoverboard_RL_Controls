@@ -129,8 +129,8 @@ class hoverboardEnv(gymnasium.Env):
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
         xidot = self.hbdata.qvel[self.chassis_hinge_x_qvel_id]
 
-        balance_reward = ((-20*(th**2 + gamma**2)*self.angle_scale)) + ((-2000*xi**2*self.angle_scale))
-        rate_reward = -0.2*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
+        balance_reward = ((-200*(th**2 + gamma**2)*self.angle_scale)) + ((-2000*xi**2*self.angle_scale))
+        rate_reward = -0.3*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
         action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
         yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
