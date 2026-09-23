@@ -4,6 +4,11 @@ import gymnasium
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader, random_split
 
 xml_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_3.xml"
 th_ini = np.deg2rad(10)
@@ -21,7 +26,7 @@ class hoverboardEnv(gymnasium.Env):
         ctrl_dim = self.hbmodel.nu
 
         self.step_count = 0
-        self.max_count = int(120/self.hbmodel.opt.timesetep)
+        self.max_count = int(120/self.hbmodel.opt.timestep)
         self.hinge_x_qpos_id = self.hbmodel.joint("pend_hinge_x").qposadr[0]
         self.hinge_y_qpos_id = self.hbmodel.joint("pend_hinge_y").qposadr[0]
 
@@ -29,12 +34,12 @@ class hoverboardEnv(gymnasium.Env):
         self.hinge_y_qvel_id = self.hbmodel.joint("pend_hinge_y").dofadr[0]
 
         self.observation_space = gymnasium.spaces.Box(
-            low= -np.inf, high= np.inf, shape=(obs_dim,), dtype=np.float32
+            low= -np.inf, high= np.inf, shape=(obs_dim,), dtype=np.float64
         )
         self.action_space = gymnasium.spaces.Box(
             low=-self.hbmodel.actuator_ctrlrange[:,0],
             high= self.hbmodel.actuator_ctrlrange[:,1],
-            shape= (ctrl_dim,), dtype=np.float32
+            shape= (ctrl_dim,), dtype=np.float64
         )
 
     def reset(self, seed=None, options=None):
@@ -67,3 +72,23 @@ class hoverboardEnv(gymnasium.Env):
     
     def _get_obs(self):
         return np.concatenate([self.hbdata.qpos, self.hbdata.qvel])
+
+class PolicyNet(nn.Module):
+    def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
+        super().__init__()
+        self.fc1 = nn.Linear(in_dim, l1_dim)
+        self.fc2 = nn.Linear(l1_dim, l2_dim)
+        self.fc3 = nn.Linear(l2_dim, out_dim)
+        
+    def forward(self,x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.tanh(self.fc3(x)) # motor control torques = low + (NN_output + 1)*(high - low)/2
+
+        return x
+
+hoverboard = hoverboardEnv(xml_path) 
+print(hoverboard.hbmodel.nq,hoverboard.hbmodel.nu)
+input_dim = hoverboard.hbmodel.nq
+output_dim = hoverboard.hbmodel.nu
+nn_policy = PolicyNet(input_dim,64,64,output_dim)
