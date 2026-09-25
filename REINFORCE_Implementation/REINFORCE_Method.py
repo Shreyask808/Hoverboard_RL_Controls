@@ -129,7 +129,7 @@ class hoverboardEnv(gymnasium.Env):
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
         xidot = self.hbdata.qvel[self.chassis_hinge_x_qvel_id]
 
-        balance_reward = ((-200*(th**2 + gamma**2)*self.angle_scale)) + ((-2000*xi**2*self.angle_scale))
+        balance_reward = np.exp((-20*(th**2 + gamma**2)*self.angle_scale)) + np.exp((-20*xi**2*self.angle_scale))
         rate_reward = -0.3*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
         action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
         yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
@@ -208,8 +208,8 @@ input_dim = 8                                                                   
 output_dim = hoverboard.hbmodel.nu                                                                              # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
-batchsize = 32                                                                                                  # Number of Rollouts per gradient step
-max_batches = 1000                                                                                              # Maximum number of batches in the Training
+batchsize = 512                                                                                                  # Number of Rollouts per gradient step
+max_batches = 100                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
 avg_reward_to_go_list = []
@@ -262,7 +262,7 @@ for batch in range(max_batches):
 tf = time.time()
 wall_clock_time_min = np.floor((tf -t0)/60)
 wall_clock_time_sec = (tf - t0)%60
-torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_9_1000x32_baseline.pth")
+torch.save(nn_policy.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/REINFORCE_Implementation/attempt_10_100x512_baseline.pth")
 print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
 print("")
 print("Weights saved successfully")
