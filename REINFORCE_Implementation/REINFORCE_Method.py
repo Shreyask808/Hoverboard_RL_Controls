@@ -186,7 +186,7 @@ def rollout(env,policy_net,device):
             if terminated or truncated:
                 break
 
-    return obs_list,raw_action_list,rewards, obs, t
+    return obs_list,raw_action_list,rewards, obs, len(rewards)
 
 def compute_reward_to_go(env,rewards):
     returns = []
