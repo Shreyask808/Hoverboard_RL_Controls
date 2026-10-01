@@ -53,8 +53,8 @@ class Hoverboard(gymnasium.Env):
         mujoco.mj_step(self.hbmodel,self.hbdata)
         self.step_count +=1
         obs = self._get_obs()
-        reward = self._compute_reward()
         terminate,*_ = self._check_done()
+        reward = self._compute_reward()
         truncate = self.step_count >= self.max_count
         return obs,reward,terminate,truncate, {}
 
@@ -89,3 +89,11 @@ class Hoverboard(gymnasium.Env):
         status_z = bool(abs(z) >= 0.1)
         status = status_th or status_gamma or status_xi or status_z
         return status,status_th,status_gamma,status_xi,status_z
+
+    def _compute_reward(self):
+        th = self.hbdata.qpos[self.th]
+        gamma = self.hbdata.qpos[self.gamma]
+        xi = self.bdata.qpos[self.xi]
+        z = self.hbdata.qpos[self.z]
+
+        
