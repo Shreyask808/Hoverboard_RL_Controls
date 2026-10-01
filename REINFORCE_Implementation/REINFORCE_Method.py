@@ -129,13 +129,13 @@ class hoverboardEnv(gymnasium.Env):
         yawrate = self.hbdata.qvel[self.chassis_hinge_z_qvel_id]
         xidot = self.hbdata.qvel[self.chassis_hinge_x_qvel_id]
 
-        balance_reward = ((-200*(th**2 + gamma**2)*self.angle_scale)) + ((-2000*xi**2*self.angle_scale))
-        rate_reward = -0.3*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
-        action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
-        yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
+        balance_reward = -(1 - np.cos(th)) - ((1 - np.cos(gamma)))
+        #rate_reward = -0.3*(thdot**2 + gammadot**2 + xidot**2)*self.angular_velocity_scale**2
+        #action_reward = -0.5*np.sum(self.hbdata.ctrl**2)/self.max_T
+        #yaw_reward = -1*yawrate**2*self.angular_velocity_scale**2
         alive_bonus = 1
 
-        reward = alive_bonus + action_reward + rate_reward + balance_reward + yaw_reward - 10*int(terminated)
+        reward = alive_bonus + balance_reward - 10*int(terminated)
         return reward
 
     def _check_done(self):
@@ -151,7 +151,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(in_dim, l1_dim)
         self.fc2 = nn.Linear(l1_dim, l2_dim)
         self.fc3 = nn.Linear(l2_dim, out_dim)
-        self.log_std = nn.Parameter(-1.5*torch.ones(out_dim))
+        self.log_std = nn.Parameter(1.5*torch.ones(out_dim))
 
     def forward(self,x):
         x = F.relu(self.fc1(x))
