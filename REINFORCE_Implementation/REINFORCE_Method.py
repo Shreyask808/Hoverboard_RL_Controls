@@ -208,7 +208,7 @@ input_dim = 8                                                                   
 output_dim = hoverboard.hbmodel.nu                                                                              # Each Motor Torque is a continuous Gaussian Distribution with a mean and standard deviation as the outputs
 nn_policy = PolicyNet(input_dim,64,64,output_dim).to(device)                                                    # Control Policy
 model_parameters = sum(p.numel() for p in nn_policy.parameters())
-batchsize = 32                                                                                                  # Number of Rollouts per gradient step
+batchsize = 512                                                                                                  # Number of Rollouts per gradient step
 max_batches = 1000                                                                                              # Maximum number of batches in the Training
 log_probability_list = []
 reward_to_go_list = []
@@ -251,11 +251,27 @@ for batch in range(max_batches):
     baseline = np.mean(avg_reward_to_go_list)
     all_rewards_tensor = torch.cat(reward_to_go_list)
     all_log_probs_tensor = torch.cat(log_probability_list)
-    loss_function = -torch.dot(all_log_probs_tensor, (all_rewards_tensor - baseline))
-    batch_reward = loss_function/batchsize
+    normalized_returns = (all_rewards_tensor - all_rewards_tensor.mean())/(all_rewards_tensor.std() + 1e-8)
+    batch_reward = -torch.mean(all_log_probs_tensor*normalized_returns)    
+    #loss_function = -torch.dot(all_log_probs_tensor, (all_rewards_tensor - baseline))
+    #batch_reward = loss_function/batchsize
     optimizer.zero_grad()
     batch_reward.backward()
+    grad_norm = torch.nn.utils.clip_grad_norm_(
+    nn_policy.parameters(),
+    max_norm=float("inf"))
+    print(
+        "Gradient norm:",
+        grad_norm.item()
+    )
+
     optimizer.step()
+
+    print(
+        "log_std:",
+        nn_policy.log_std.detach().cpu().numpy()
+    )
+   
     episode_length = episode_length*hoverboard.hbmodel.opt.timestep/batchsize
     print(f"{batch+1}. Batch {batch+1} done, Avg Episode Length - {episode_length} [sec]...................")
 
