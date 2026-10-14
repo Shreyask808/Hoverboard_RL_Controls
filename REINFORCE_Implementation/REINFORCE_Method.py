@@ -151,7 +151,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(in_dim, l1_dim)
         self.fc2 = nn.Linear(l1_dim, l2_dim)
         self.fc3 = nn.Linear(l2_dim, out_dim)
-        self.log_std = nn.Parameter(1.5*torch.ones(out_dim))
+        self.log_std = nn.Parameter(-0.5*torch.ones(out_dim))
 
     def forward(self,x):
         x = F.relu(self.fc1(x))
