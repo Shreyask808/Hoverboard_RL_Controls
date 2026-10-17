@@ -4,7 +4,6 @@ from torch.distributions import Normal
 
 # =================================================================================================================================================================================================================
 # PPO Rollout Function
-discount_factor = 0.999
 def rollout(env,Actor,Critic,device):
     obs_list = []
     raw_action_list = []
