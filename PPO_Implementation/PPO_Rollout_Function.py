@@ -12,13 +12,14 @@ def rollout(env,Actor,Critic,device):
     critic_list = []
     log_prob_list = []
     obs, info = env.reset()
+    terminate = False
 
     with torch.no_grad():
         for t in range(env.max_count):
             obs_list.append(obs)
             obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
             value_function = Critic(obs_tensor)
-            critic_list.append(value_function.squeeze(0).detach().cpu().numpy())
+            critic_list.append(value_function.item())
             mean,std = Actor(obs_tensor)
             policy_distribution = Normal(mean,std)
             action = policy_distribution.sample()
@@ -29,15 +30,25 @@ def rollout(env,Actor,Critic,device):
             obs,reward,terminate,truncate,_ = env.step(motor_ctrl)
 
             rewards.append(reward)
-            raw_action_list.append(action)
+            raw_action_list.append(action.squeeze(0).cpu().numpy())
             if terminate or truncate:
                 break
-    return obs_list,rewards,raw_action_list,len(obs_list)
+        if terminate:
+            last_value = 0
+        else:
+            last_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
+            last_value = Critic(last_tensor).item()
 
-def Advantage(critic_list,rewards,episode_length):
+    return obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value
+
+def Advantage(critic_list,rewards,last_value,discount_factor):
+    current_value = np.array(critic_list, dtype=np.float32)
+    next_value = np.array(critic_list[1:] + [last_value], dtype=np.float32)
+    rewards = np.array(rewards, dtype=np.float32)
     advantage_list = []
-    with torch.no_grad():
-        for t in range(episode_length):
-            advantage = rewards(t) + discount_factor*critic_list[t+1] - critic_list[j]
-            advantage_list.append(advantage)
-    return advantage_list
+    targets_list = []
+
+    targets_list = rewards + discount_factor*next_value
+    advantage_list = targets_list - current_value
+
+    return advantage_list,targets_list
