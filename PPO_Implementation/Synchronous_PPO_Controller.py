@@ -37,3 +37,6 @@ workers = [Worker(i,Hoverboard,Policy_Net,Value_Function) for i in range(N_worke
     
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
+epochs = 10
+batchsize = 10
+iterations = 100
