@@ -4,7 +4,7 @@ from torch.distributions import Normal
 
 # =================================================================================================================================================================================================================
 # PPO Rollout Function
-def rollout(env,Actor,Critic,device):
+def Rollout(env,Actor,Critic,device):
     obs_list = []
     raw_action_list = []
     rewards = []
@@ -51,3 +51,27 @@ def Advantage(critic_list,rewards,last_value,discount_factor):
     advantage_list = targets_list - current_value
 
     return advantage_list,targets_list
+
+def Batch_Rollout(env,Actor,Critic,batchsize,discount_factor,device):
+    batch_obs = []
+    batch_log_probs = []
+    batch_action = []
+    episode_length = []
+
+    for i in range(batchsize):
+        obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value = Rollout(env,Actor,Critic,device)
+        episode_length.append(len(rewards))
+        advantage_list,targets_list = Advantage(critic_list,rewards,last_value,discount_factor)
+        batch_obs.extend(obs_list)
+        batch_advantage.append(advantage_list)
+        batch_targets.append(targets_list)
+        batch_log_probs.extend(log_prob_list)
+        batch_action.extend(raw_action_list)
+
+    batch_obs = np.array(batch_obs, dtype=np.float32)
+    batch_log_probs = np.array(batch_log_probs, dtype=np.float32)
+    batch_action = np.array(batch_action, dtype=np.float32)
+    batch_advantage = np.concatenate(batch_advantage)
+    batch_targets = np.concatenate(batch_targets)
+    episode_length = np.concatenate(episode_length)
+    return batch_obs,batch_advantage,batch_targets,batch_log_probs,batch_action,episode_length
