@@ -8,7 +8,7 @@ import gymnasium
 class Hoverboard(gymnasium.Env):
     def __init__(self,XML_path, input_dim):
         super().__init__()
-        self.hbmodel = mujoco.Mjmodel.from_xml_path(XML_path)
+        self.hbmodel = mujoco.MjModel.from_xml_path(XML_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
         self.step_count = 0                                                                                                                     # Step counter in Mujoco Step function
 
@@ -23,21 +23,21 @@ class Hoverboard(gymnasium.Env):
         self.sction_space = gymnasium.spaces.Box(low= self.ctrl_low, high= self.ctrl_high, shape=(self.ctrl_dim,), dtype=np.float64)            # Action space definition
 
         ## States indices
-        self.th = self.hbmodel.joint["pend_hinge_y"].qposadr[0]
-        self.gamma = self.hbmodel.joint["pend_hinge_x"].qposadr[0]
-        self.phi_R = self.hbmodel.joint["right_hinge"].qposadr[0]
-        self.phi_L = self.hbmodel.joint["left_hinge"].qposadr[0]
-        self.psi = self.hbmodel.joint["chassis_hinge_z"].qposadr[0]
-        self.xi = self.hbmodel.joint["chassis_hinge_x"].qposadr[0]
-        self.z = self.hbmodel.joint["chassis_z"].qposadr[0]
+        self.th = self.hbmodel.joint("pend_hinge_y").qposadr[0]
+        self.gamma = self.hbmodel.joint("pend_hinge_x").qposadr[0]
+        self.phi_R = self.hbmodel.joint("right_hinge").qposadr[0]
+        self.phi_L = self.hbmodel.joint("left_hinge").qposadr[0]
+        self.psi = self.hbmodel.joint("chassis_hinge_z").qposadr[0]
+        self.xi = self.hbmodel.joint("chassis_hinge_x").qposadr[0]
+        self.z = self.hbmodel.joint("chassis_z").qposadr[0]
 
         # Velocity indices
-        self.thdot = self.hbmodel.joint["pend_hinge_y"].dofadr[0]
-        self.gammadot = self.hbmodel.joint["pend_hinge_x"].dofadr[0]
-        self.phidot_R = self.hbmodel.joint["right_hinge"].dofadr[0]
-        self.phidot_L = self.hbmodel.joint["left_hinge"].dofadr[0]
-        self.psidot = self.hbmodel.joint["chassis_hinge_z"].dofadr[0]
-        self.xidot = self.hbmodel.joint["chassis_hinge_x"].dofadr[0]
+        self.thdot = self.hbmodel.joint("pend_hinge_y").dofadr[0]
+        self.gammadot = self.hbmodel.joint("pend_hinge_x").dofadr[0]
+        self.phidot_R = self.hbmodel.joint("right_hinge").dofadr[0]
+        self.phidot_L = self.hbmodel.joint("left_hinge").dofadr[0]
+        self.psidot = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
+        self.xidot = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
 
     def reset(self,seed=None, options=None, qpos_array=None, qvel_array=None):
         super().reset(seed=seed)
