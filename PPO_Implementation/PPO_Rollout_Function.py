@@ -14,7 +14,7 @@ def Rollout(env,Actor,Critic,device):
     terminate = False
 
     with torch.no_grad():
-        for t in range(env.max_count):
+        for t in range(int(env.max_count)):
             obs_list.append(obs)
             obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
             value_function = Critic(obs_tensor)
@@ -59,7 +59,7 @@ def Batch_Rollout(env,Actor,Critic,batchsize,discount_factor,device):
     batch_advantage = []
     batch_targets = []
     episode_length = []
-    
+
     for i in range(batchsize):
         obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value = Rollout(env,Actor,Critic,device)
         episode_length.append(len(rewards))
