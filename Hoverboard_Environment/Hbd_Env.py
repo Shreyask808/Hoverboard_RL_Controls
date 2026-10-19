@@ -5,8 +5,9 @@ import gymnasium
 # =================================================================================================================================================================================================================
 # Class Definition
 class Hoverboard(gymnasium.Env):
-    def __init__(self,XML_path, input_dim):
+    def __init__(self,XML_path):
         super().__init__()
+        input_dim = 8
         self.hbmodel = mujoco.MjModel.from_xml_path(XML_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
         self.step_count = 0                                                                                                                     # Step counter in Mujoco Step function
