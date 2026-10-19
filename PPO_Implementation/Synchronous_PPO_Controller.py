@@ -37,6 +37,9 @@ def worker_fn(worker_id,xml_path,Policy_Net,Value_Function,worker_input,worker_o
         worker_output.put(Batch_Rollout(env,Policy_Net,Value_Function,n_episodes,discount_factor,cpu))
 
 # =================================================================================================================================================================================================================
+# PPO Gradient Step
+
+# =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
 epochs = 10
 batchsize = 10
@@ -73,7 +76,7 @@ if __name__=="__main__":
             q.put(batchsize)
         results = [worker_outputs.get() for _ in range(N_workers)]
         replay_buffer = Batch(*[np.concatenate(x) for x in zip(*results)])
-        
+
     for q in worker_inputs:
         q.put(None)
     for p in process:
