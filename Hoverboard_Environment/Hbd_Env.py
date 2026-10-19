@@ -1,6 +1,5 @@
 import numpy as np
 import mujoco
-import mujoco.viewer
 import gymnasium
 
 # =================================================================================================================================================================================================================
@@ -20,7 +19,7 @@ class Hoverboard(gymnasium.Env):
         self.ctrl_low = self.hbmodel.actuator_ctrlrange[:,0]                                                                                    # Lower Bound for Control Inputs [N.m]
         self.ctrl_high = self.hbmodel.actuator_ctrlrange[:,1]                                                                                   # High Bound for Control Inputs [N.m]        
         self.observation_space = gymnasium.spaces.Box(low= -np.inf, high= np.inf, shape=(input_dim,), dtype=np.float64)                         # Observation space definition
-        self.sction_space = gymnasium.spaces.Box(low= self.ctrl_low, high= self.ctrl_high, shape=(self.ctrl_dim,), dtype=np.float64)            # Action space definition
+        self.action_space = gymnasium.spaces.Box(low= self.ctrl_low, high= self.ctrl_high, shape=(self.ctrl_dim,), dtype=np.float64)            # Action space definition
 
         ## States indices
         self.th = self.hbmodel.joint("pend_hinge_y").qposadr[0]
@@ -62,15 +61,15 @@ class Hoverboard(gymnasium.Env):
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
         psi = self.hbdata.qpos[self.psi]
-        phi_R = self.hbdata.qpos[self.psi_R]
-        phi_L = self.hbdata.qpos[self.psi_L]
-        xi = self.bdata.qpos[self.xi]
+        phi_R = self.hbdata.qpos[self.phi_R]
+        phi_L = self.hbdata.qpos[self.phi_L]
+        xi = self.hbdata.qpos[self.xi]
 
         thdot = self.hbdata.qvel[self.thdot]
         gammadot = self.hbdata.qvel[self.gammadot]
         psidot = self.hbdata.qvel[self.psidot]
-        phidot_R = self.hbdata.qvel[self.psidot_R]
-        phidot_L = self.hbdata.qvel[self.psidot_L]
+        phidot_R = self.hbdata.qvel[self.phidot_R]
+        phidot_L = self.hbdata.qvel[self.phidot_L]
         xidot = self.hbdata.qvel[self.xidot]
 
         angles = [th,gamma,psi,phi_R,phi_L,xi]
@@ -81,7 +80,7 @@ class Hoverboard(gymnasium.Env):
     def _check_done(self):
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
-        xi = self.bdata.qpos[self.xi]
+        xi = self.hbdata.qpos[self.xi]
         z = self.hbdata.qpos[self.z]
         status_th = bool(abs(th) >= np.deg2rad(30))
         status_gamma = bool(abs(gamma) >= np.deg2rad(30))
@@ -93,7 +92,7 @@ class Hoverboard(gymnasium.Env):
     def _compute_reward(self):
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
-        xi = self.bdata.qpos[self.xi]
+        xi = self.hbdata.qpos[self.xi]
         z = self.hbdata.qpos[self.z]
 
         
