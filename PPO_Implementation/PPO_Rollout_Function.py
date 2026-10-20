@@ -62,7 +62,7 @@ def Batch_Rollout(env,Actor,Critic,batchsize,discount_factor,device):
 
     for i in range(batchsize):
         obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value = Rollout(env,Actor,Critic,device)
-        episode_length.append(len(rewards))
+        episode_length.append(len(rewards)*env.timestep)
         advantage_list,targets_list = Advantage(critic_list,rewards,last_value,discount_factor)
         batch_obs.extend(obs_list)
         batch_advantage.append(advantage_list)
