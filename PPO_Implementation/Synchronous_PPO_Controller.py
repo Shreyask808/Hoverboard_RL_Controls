@@ -15,7 +15,7 @@ from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 
 # =================================================================================================================================================================================================================
 # Parallel Workers definition
-Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
+Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
 N_workers = 3
 input_dim = 12
 
