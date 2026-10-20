@@ -7,7 +7,7 @@ import gymnasium
 class Hoverboard(gymnasium.Env):
     def __init__(self,XML_path):
         super().__init__()
-        input_dim = 8
+        input_dim = 12
         self.hbmodel = mujoco.MjModel.from_xml_path(XML_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
         self.step_count = 0                                                                                                                     # Step counter in Mujoco Step function
@@ -39,12 +39,21 @@ class Hoverboard(gymnasium.Env):
         self.psidot = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
         self.xidot = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
 
-    def reset(self,seed=None, options=None, qpos_array=None, qvel_array=None):
+    def reset(self,seed=None, options=None):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.hbmodel, self.hbdata)
         self.step_count = 0
-        self.hbdata.qpos[:] = qpos_array
-        self.hbdata.qvel[:] = qvel_array
+
+        th_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
+        gamma_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
+        thdot_ini = 0
+        gammadot_ini = 0
+
+        self.hbdata.qpos[self.th] = th_ini             # th_ini
+        self.hbdata.qpos[self.gamma] = gamma_ini          # gamma_ini
+
+        self.hbdata.qvel[self.thdot] = thdot_ini
+        self.hbdata.qvel[self.gammadot] = gammadot_ini
         mujoco.mj_forward(self.hbmodel,self.hbdata)
         return self._get_obs(),{}
 
@@ -96,4 +105,9 @@ class Hoverboard(gymnasium.Env):
         xi = self.hbdata.qpos[self.xi]
         z = self.hbdata.qpos[self.z]
 
+        alive_bonus = 1
+        balance_reward = -(1 - np.cos(th))*(1 - np.cos(gamma))
+
+        reward = alive_bonus + balance_reward
+        return reward
         
