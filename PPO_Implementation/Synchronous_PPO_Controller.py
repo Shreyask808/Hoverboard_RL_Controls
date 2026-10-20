@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import torch
+import time
 import torch.nn.functional as F
 from torch.distributions import Normal
 import torch.optim as optim
@@ -16,7 +17,7 @@ from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 # =================================================================================================================================================================================================================
 # Parallel Workers definition
 Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
-N_workers = 3
+N_workers = 10
 input_dim = 12
 
 @dataclass
@@ -79,10 +80,11 @@ def PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,de
 # Synchronous PPO Architecture Definition
 epochs = 10
 batchsize = 32
-iterations = 250
+iterations = 2
 discount_factor = 0.99
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+t0 = time.time()
 
 if __name__=="__main__":
     mp.set_start_method("spawn")
@@ -123,3 +125,17 @@ if __name__=="__main__":
         q.put(None)
     for p in process:
         p.join()
+
+    tf = time.time()
+    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_1_Actor_10W.pth")
+    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_1_Critic_10W.pth")
+
+    wall_clock_time_min = np.floor((tf -t0)/60)
+    wall_clock_time_sec = (tf - t0)%60
+    print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
+    print("")
+    print("Weights saved successfully")
+    print("")
+    print(f"Wall Clock Time - {wall_clock_time_min} [min] {wall_clock_time_sec} [sec]")
+    print("")
+    print("-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------")
