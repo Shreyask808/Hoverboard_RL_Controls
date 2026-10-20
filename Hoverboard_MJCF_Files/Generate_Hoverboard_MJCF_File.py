@@ -79,7 +79,11 @@ def generate_MJCF(R,L,M,h,m,T_max):
             </body>
         </body>
     </worldbody>
-
+    
+    <contact>
+        <exclude body1="chassis" body2="pendulum_rod"/>
+    </contact>
+    
     <actuator>
         <motor name="left_motor" joint="left_hinge" gear="1" ctrlrange="{-T_max} {T_max}"/>
         <motor name="right_motor" joint="right_hinge" gear="1" ctrlrange="{-T_max} {T_max}"/>
