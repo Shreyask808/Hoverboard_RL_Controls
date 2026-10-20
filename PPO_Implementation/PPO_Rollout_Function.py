@@ -75,5 +75,5 @@ def Batch_Rollout(env,Actor,Critic,batchsize,discount_factor,device):
     batch_action = np.array(batch_action, dtype=np.float32)
     batch_advantage = np.concatenate(batch_advantage)
     batch_targets = np.concatenate(batch_targets)
-    episode_length = np.concatenate(episode_length)
+    episode_length = np.array(episode_length)
     return batch_obs,batch_advantage,batch_targets,batch_log_probs,batch_action,episode_length
