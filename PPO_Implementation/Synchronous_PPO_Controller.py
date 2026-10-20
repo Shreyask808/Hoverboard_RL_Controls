@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 import torch
+import torch.nn.functional as F
 from torch.distributions import Normal
 import torch.optim as optim
 import torch.multiprocessing as mp
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import sys
 from pathlib import Path
@@ -39,15 +40,48 @@ def worker_fn(worker_id,xml_path,Policy_Net,Value_Function,worker_input,worker_o
 
 # =================================================================================================================================================================================================================
 # PPO Gradient Step
-def PPO_Update(advantage,Actor_optim,Critic_optim,device):
-    Actor_optim.zero_grad()
-    Critic_optim.zero_grad()
+## PPO Dataset
+class PPO_Dataset(Dataset):
+    def __init__(self,replay_buffer,device):
+        self.obs = torch.tensor(replay_buffer.obs, dtype=torch.float32, device=device)
+        self.advantage = torch.tensor(replay_buffer.advantage, dtype=torch.float32, device=device)
+        self.targets = torch.tensor(replay_buffer.targets, dtype=torch.float32, device=device)
+        self.log_prob = torch.tensor(replay_buffer.log_probs, dtype=torch.float32, device=device)
+        self.action = torch.tensor(replay_buffer.action, dtype=torch.float32, device=device)
+
+    def __len__(self):
+        return len(self.advantage)
+
+    def __getitem__(self, index):
+        return self.obs[index], self.advantage[index], self.targets[index], self.log_prob[index], self.action[index]
+    
+def PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device):
+    for epoch in range(epochs):
+        for obs_b, advantage_b, targets_b, log_prob_b, action_b in train_loader:
+            obs_b,advantage_b, targets_b, log_prob_b, action_b = obs_b.to(device), advantage_b.to(device), targets_b.to(device), log_prob_b.to(device), action_b.to(device)
+            Actor_optim.zero_grad()
+            Critic_optim.zero_grad()
+            mean,std = Actor(obs_b)
+            policy_distribution = Normal(mean,std)
+            new_log_prob = policy_distribution.log_prob(action_b).sum(dim=1)
+            
+            ratio = torch.exp(new_log_prob - log_prob_b)
+            L = torch.min(ratio * advantage_b, torch.clamp(ratio, 1 - clip, 1 + clip) * advantage_b)
+            loss = -L.mean()
+            loss.backward()
+            Actor_optim.step()
+    
+            regress = F.mse_loss(Critic(obs_b),targets_b)
+            regress.backward()
+            Critic_optim.step()
+        
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
 epochs = 10
-batchsize = 10
-iterations = 1
+batchsize = 32
+iterations = 100
 discount_factor = 0.99
+clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__=="__main__":
@@ -79,10 +113,13 @@ if __name__=="__main__":
             q.put(batchsize)
         results = [worker_outputs.get() for _ in range(N_workers)]
         replay_buffer = Batch(*[np.concatenate(x) for x in zip(*results)])
+        buffer_dataset = PPO_Dataset(replay_buffer,device)
+        train_loader = DataLoader(buffer_dataset, batch_size = 64, shuffle=True)
+        PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
+
+        print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}")
 
     for q in worker_inputs:
         q.put(None)
     for p in process:
         p.join()
-
-    print(replay_buffer)
