@@ -15,7 +15,7 @@ from PPO_Implementation.PPO_Rollout_Function import Rollout, Advantage, Batch_Ro
 # Parallel Workers definition
 Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_2.xml"
 N_workers = 3
-input_dim = 8
+input_dim = 12
 
 @dataclass
 class Batch:
@@ -42,7 +42,7 @@ def worker_fn(worker_id,xml_path,Policy_Net,Value_Function,worker_input,worker_o
 # Synchronous PPO Architecture Definition
 epochs = 10
 batchsize = 10
-iterations = 100
+iterations = 1
 discount_factor = 0.99
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -80,3 +80,5 @@ if __name__=="__main__":
         q.put(None)
     for p in process:
         p.join()
+
+    print(replay_buffer)
