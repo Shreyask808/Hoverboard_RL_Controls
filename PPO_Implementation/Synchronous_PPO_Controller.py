@@ -3,6 +3,7 @@ import torch
 from torch.distributions import Normal
 import torch.optim as optim
 import torch.multiprocessing as mp
+from torch.utils.data import DataLoader, Dataset, random_split
 import numpy as np
 import sys
 from pathlib import Path
@@ -38,6 +39,9 @@ def worker_fn(worker_id,xml_path,Policy_Net,Value_Function,worker_input,worker_o
 
 # =================================================================================================================================================================================================================
 # PPO Gradient Step
+def PPO_Update(advantage,Actor_optim,Critic_optim,device):
+    Actor_optim.zero_grad()
+    Critic_optim.zero_grad()
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
 epochs = 10
