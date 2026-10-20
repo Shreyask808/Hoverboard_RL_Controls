@@ -45,7 +45,7 @@ class Hoverboard(gymnasium.Env):
         self.step_count = 0
 
         th_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
-        gamma_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
+        gamma_ini = 0
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -106,7 +106,7 @@ class Hoverboard(gymnasium.Env):
         z = self.hbdata.qpos[self.z]
 
         alive_bonus = 1
-        balance_reward = -(1 - np.cos(th))*(1 - np.cos(gamma))
+        balance_reward = np.exp(-(th/0.2)**2 - (gamma/0.2)**2)
 
         reward = alive_bonus + balance_reward
         return reward
