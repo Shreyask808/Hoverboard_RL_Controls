@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from Actor_Critic_Neural_Networks.Actor_Critic_NNs import Policy_Net, Value_Function
 from Hoverboard_Environment.Hbd_Env import Hoverboard
-from PPO_Implementation.PPO_Rollout_Function import Rollout, Advantage, Batch_Rollout
+from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 
 # =================================================================================================================================================================================================================
 # Parallel Workers definition
