@@ -116,7 +116,7 @@ if __name__=="__main__":
         results = [worker_outputs.get() for _ in range(N_workers)]
         replay_buffer = Batch(*[np.concatenate(x) for x in zip(*results)])
         buffer_dataset = PPO_Dataset(replay_buffer,device)
-        train_loader = DataLoader(buffer_dataset, batch_size = 256, shuffle=True)
+        train_loader = DataLoader(buffer_dataset, batch_size = 64, shuffle=True)
         PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
 
         print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}")
