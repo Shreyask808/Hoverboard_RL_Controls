@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import time
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as f
 import torch.optim as optim
 from torch.distributions import Normal
 
@@ -17,20 +17,21 @@ data = mujoco.MjData(model)
 angle_scale = 1
 rates_scale = np.sqrt(model.body("pendulum_mass").pos[2]/9.81)
 
-class PolicyNet(nn.Module):
-    def __init__(self, in_dim, l1_dim, l2_dim, out_dim):
+# Actor (Controller)
+class Policy_Net(nn.Module):
+    def __init__(self,input_dim,h1_dim,h2_dim,output_dim):
         super().__init__()
-        self.fc1 = nn.Linear(in_dim, l1_dim)
-        self.fc2 = nn.Linear(l1_dim, l2_dim)
-        self.fc3 = nn.Linear(l2_dim, out_dim)
-        self.log_std = nn.Parameter(torch.zeros(out_dim))
+        self.fc1 = nn.Linear(input_dim, h1_dim)
+        self.fc2 = nn.Linear(h1_dim, h2_dim)
+        self.fc3 = nn.Linear(h2_dim, output_dim)
+        self.log_std = nn.Parameter(-0.5*torch.ones(2))
 
     def forward(self,x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        mean = self.fc3(x) # Continuous Gaussian Distribution 
+        x = f.relu(self.fc1(x))
+        x = f.relu(self.fc2(x))
+        mean = self.fc3(x)
         std = torch.exp(self.log_std)
-        return mean, std
+        return mean,std
 
 time_log = []
 theta_log = []
@@ -42,7 +43,7 @@ Mr_log = []
 
 input_dim = 8                   
 output_dim = model.nu
-nn_policy = PolicyNet(input_dim,64,64,output_dim)
+nn_policy = Policy_Net(input_dim,64,64,2)
 nn_policy.load_state_dict(torch.load(weights, map_location="cpu"))
 nn_policy.eval()   
 
