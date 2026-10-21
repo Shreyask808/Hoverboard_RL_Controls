@@ -41,7 +41,7 @@ gammadot_log = []
 Ml_log = []
 Mr_log = []
 
-input_dim = 8                   
+input_dim = 12                   
 output_dim = model.nu
 nn_policy = Policy_Net(input_dim,64,64,2)
 nn_policy.load_state_dict(torch.load(weights, map_location="cpu"))
@@ -51,18 +51,24 @@ duration= 100
 left_motor_id = model.actuator("left_motor").id
 right_motor_id = model.actuator("right_motor").id
 
-pend_hinge_x_qpos_id = model.joint("pend_hinge_x").qposadr[0]
-pend_hinge_y_qpos_id = model.joint("pend_hinge_y").qposadr[0]
-pend_hinge_x_qvel_id = model.joint("pend_hinge_x").dofadr[0]
-pend_hinge_y_qvel_id = model.joint("pend_hinge_y").dofadr[0]
+th_id = model.joint("pend_hinge_y").qposadr[0]
+gamma_id = model.joint("pend_hinge_x").qposadr[0]
+phi_R_id = model.joint("right_hinge").qposadr[0]
+phi_L_id = model.joint("left_hinge").qposadr[0]
+psi_id = model.joint("chassis_hinge_z").qposadr[0]
+xi_id = model.joint("chassis_hinge_x").qposadr[0]
+z_id = model.joint("chassis_z").qposadr[0]
 
-chassis_hinge_z_id = model.joint("chassis_hinge_z").qposadr[0]
-chassis_hinge_x_id = model.joint("chassis_hinge_x").qposadr[0]
-chassis_hinge_z_qvel_id = model.joint("chassis_hinge_z").dofadr[0]
-chassis_hinge_x_qvel_id = model.joint("chassis_hinge_x").dofadr[0]
+# Velocity indices
+thdot_id = model.joint("pend_hinge_y").dofadr[0]
+gammadot_id = model.joint("pend_hinge_x").dofadr[0]
+phidot_R_id = model.joint("right_hinge").dofadr[0]
+phidot_L_id = model.joint("left_hinge").dofadr[0]
+psidot_id = model.joint("chassis_hinge_z").dofadr[0]
+xidot_id = model.joint("chassis_hinge_x").dofadr[0]
         
-data.qpos[pend_hinge_y_qpos_id] = np.deg2rad(10)
-data.qpos[pend_hinge_x_qpos_id] = np.deg2rad(0)
+data.qpos[th_id] = np.deg2rad(2)
+data.qpos[gamma_id] = np.deg2rad(0)
 mujoco.mj_forward(model,data)
 
 low = model.actuator_ctrlrange[:,0]
@@ -71,19 +77,23 @@ high = model.actuator_ctrlrange[:,1]
 with mujoco.viewer.launch_passive(model,data) as viewer:
     while viewer.is_running() and data.time < duration:
         step_start = time.time()
-        th = data.qpos[pend_hinge_y_qpos_id]
-        gamma = data.qpos[pend_hinge_x_qpos_id]
-        psi = data.qpos[chassis_hinge_z_id]
-        xi = data.qpos[chassis_hinge_x_id]
+        th = data.qpos[th_id]
+        gamma = data.qpos[gamma_id]
+        psi = data.qpos[psi_id]
+        phi_R = data.qpos[phi_R_id]
+        phi_L = data.qpos[phi_L_id]
+        xi = data.qpos[xi_id]
 
-        thdot = data.qvel[pend_hinge_y_qvel_id]
-        gammadot = data.qvel[pend_hinge_x_qvel_id]
-        psidot = data.qvel[chassis_hinge_z_qvel_id]
-        xidot = data.qvel[chassis_hinge_x_qvel_id]
+        thdot = data.qvel[thdot_id]
+        gammadot = data.qvel[gammadot_id]
+        psidot = data.qvel[psidot_id]
+        phidot_R = data.qvel[phidot_R_id]
+        phidot_L = data.qvel[phidot_L_id]
+        xidot = data.qvel[xidot_id]
 
-        angles = [th*angle_scale, gamma*angle_scale, psi*angle_scale, xi*angle_scale]
-        rates = [thdot*rates_scale, gammadot*rates_scale, psidot*rates_scale, xidot*rates_scale]
-        states = np.concatenate([angles, rates])
+        angles = [th,gamma,psi,phi_R,phi_L,xi]
+        velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot]
+        states = np.concatenate([angles, velocity])
         inputs = torch.tensor(states, dtype=torch.float32).unsqueeze(0) 
         mean, std = nn_policy(inputs)
         u = torch.tanh(mean)
@@ -99,10 +109,10 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
 
         time_log.append(data.time)
         theta_log.append(th)
-        gamma_log.append(data.qpos[pend_hinge_x_qpos_id])
+        gamma_log.append(data.qpos[gamma_id])
 
-        thetadot_log.append(data.qvel[pend_hinge_y_qvel_id])
-        gammadot_log.append(data.qvel[pend_hinge_x_qvel_id])
+        thetadot_log.append(data.qvel[thdot_id])
+        gammadot_log.append(data.qvel[gammadot_id])
 
         Ml_log.append(Ml)
         Mr_log.append(Mr)
