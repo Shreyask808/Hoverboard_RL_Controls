@@ -17,7 +17,7 @@ from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 # =================================================================================================================================================================================================================
 # Parallel Workers definition
 Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
-N_workers = 3
+N_workers = 5
 input_dim = 12
 
 @dataclass
@@ -80,8 +80,8 @@ def PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,de
 # Synchronous PPO Architecture Definition
 epochs = 10
 batchsize = 10
-iterations = 200
-discount_factor = 0.999
+iterations = 1200
+discount_factor = 0.99
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 t0 = time.time()
@@ -110,13 +110,17 @@ if __name__=="__main__":
     for itr in range(iterations):
         shared_critic.load_state_dict(Critic.state_dict())  
         shared_actor.load_state_dict(Actor.state_dict())
-
         for q in worker_inputs:
             q.put(batchsize)
         results = [worker_outputs.get() for _ in range(N_workers)]
         replay_buffer = Batch(*[np.concatenate(x) for x in zip(*results)])
+        adv = replay_buffer.advantage
+        replay_buffer.advantage = (adv - adv.mean()) / (adv.std() + 1e-8)
         buffer_dataset = PPO_Dataset(replay_buffer,device)
-        train_loader = DataLoader(buffer_dataset, batch_size = 64, shuffle=True)
+        target_steps = 170                                   # steps per iteration that worked early
+        n_mb_per_epoch = max(1, target_steps // epochs)      # about 17
+        mb_size = max(256, len(adv) // n_mb_per_epoch)
+        train_loader = DataLoader(buffer_dataset, batch_size = mb_size, shuffle=True)
         PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
 
         print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}")
@@ -127,8 +131,8 @@ if __name__=="__main__":
         p.join()
 
     tf = time.time()
-    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_1_Actor_10W.pth")
-    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_1_Critic_10W.pth")
+    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_4_Actor_10W.pth")
+    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_4_Critic_10W.pth")
 
     wall_clock_time_min = np.floor((tf -t0)/60)
     wall_clock_time_sec = (tf - t0)%60
