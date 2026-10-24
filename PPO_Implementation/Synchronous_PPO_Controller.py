@@ -56,32 +56,41 @@ class PPO_Dataset(Dataset):
     def __getitem__(self, index):
         return self.obs[index], self.advantage[index], self.targets[index], self.log_prob[index], self.action[index]
     
-def PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device):
+def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, clip, device, target_kl=0.01):
+    ds = train_loader.dataset
     for epoch in range(epochs):
-        for obs_b, advantage_b, targets_b, log_prob_b, action_b in train_loader:
-            obs_b,advantage_b, targets_b, log_prob_b, action_b = obs_b.to(device), advantage_b.to(device), targets_b.to(device), log_prob_b.to(device), action_b.to(device)
+        for obs_b, adv_b, tgt_b, old_lp_b, act_b in train_loader:
+            mean, std = Actor(obs_b)
+            new_lp = Normal(mean, std).log_prob(act_b).sum(dim=1)
+            ratio = torch.exp(new_lp - old_lp_b)
+            L = torch.min(ratio * adv_b, torch.clamp(ratio, 1 - clip, 1 + clip) * adv_b)
+
             Actor_optim.zero_grad()
-            Critic_optim.zero_grad()
-            mean,std = Actor(obs_b)
-            policy_distribution = Normal(mean,std)
-            new_log_prob = policy_distribution.log_prob(action_b).sum(dim=1)
-            
-            ratio = torch.exp(new_log_prob - log_prob_b)
-            L = torch.min(ratio * advantage_b, torch.clamp(ratio, 1 - clip, 1 + clip) * advantage_b)
-            loss = -L.mean()
-            loss.backward()
+            (-L.mean()).backward()
+            torch.nn.utils.clip_grad_norm_(Actor.parameters(), 0.5)
             Actor_optim.step()
-    
-            regress = F.mse_loss(Critic(obs_b),targets_b)
-            regress.backward()
+
+            Critic_optim.zero_grad()
+            F.mse_loss(Critic(obs_b), tgt_b).backward()
+            torch.nn.utils.clip_grad_norm_(Critic.parameters(), 0.5)
             Critic_optim.step()
+
+        with torch.no_grad():
+            mean, std = Actor(ds.obs)
+            log_ratio = Normal(mean, std).log_prob(ds.action).sum(dim=1) - ds.log_prob
+            kl = ((torch.exp(log_ratio) - 1) - log_ratio).mean().item()
+
+        if kl > 1.5 * target_kl:
+            break
+
+    return kl, epoch + 1
         
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
-epochs = 10
+epochs = 25
 batchsize = 10
 iterations = 1200
-discount_factor = 0.99
+discount_factor = 0.999
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 t0 = time.time()
@@ -121,9 +130,9 @@ if __name__=="__main__":
         n_mb_per_epoch = max(1, target_steps // epochs)      # about 17
         mb_size = max(256, len(adv) // n_mb_per_epoch)
         train_loader = DataLoader(buffer_dataset, batch_size = mb_size, shuffle=True)
-        PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
+        kl, epoch = PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
 
-        print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}")
+        print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}, KL = {kl}, Epoch = {epoch}")
 
     for q in worker_inputs:
         q.put(None)
@@ -131,8 +140,8 @@ if __name__=="__main__":
         p.join()
 
     tf = time.time()
-    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_4_Actor_10W.pth")
-    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_4_Critic_10W.pth")
+    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Actor_10W.pth")
+    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Critic_10W.pth")
 
     wall_clock_time_min = np.floor((tf -t0)/60)
     wall_clock_time_sec = (tf - t0)%60
