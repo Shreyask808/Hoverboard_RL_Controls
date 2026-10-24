@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 
 xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
-weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_4_Actor_10W.pth"
+weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Actor_10W.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
@@ -67,7 +67,7 @@ phidot_L_id = model.joint("left_hinge").dofadr[0]
 psidot_id = model.joint("chassis_hinge_z").dofadr[0]
 xidot_id = model.joint("chassis_hinge_x").dofadr[0]
         
-data.qpos[th_id] = np.deg2rad(5)
+data.qpos[th_id] = np.deg2rad(10)
 data.qpos[gamma_id] = np.deg2rad(0)
 mujoco.mj_forward(model,data)
 
