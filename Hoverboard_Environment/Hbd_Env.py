@@ -63,7 +63,7 @@ class Hoverboard(gymnasium.Env):
         self.step_count +=1
         obs = self._get_obs()
         terminate,*_ = self._check_done()
-        reward = self._compute_reward()
+        reward = self._compute_reward(terminate)
         truncate = self.step_count >= self.max_count
         return obs,reward,terminate,truncate, {}
 
@@ -99,7 +99,7 @@ class Hoverboard(gymnasium.Env):
         status = status_th or status_gamma or status_xi or status_z
         return status,status_th,status_gamma,status_xi,status_z
 
-    def _compute_reward(self):
+    def _compute_reward(self, terminated):
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
         xi = self.hbdata.qpos[self.xi]
@@ -107,7 +107,11 @@ class Hoverboard(gymnasium.Env):
 
         alive_bonus = 1
         balance_reward = np.exp(-(th/0.2)**2 - (gamma/0.2)**2)
-
-        reward = alive_bonus + balance_reward
+        xi_pen = (xi / np.deg2rad(5))**2
+        z_pen  = (z / 0.1)**2
+        
+        reward = alive_bonus + balance_reward - 0.5*xi_pen - 0.5*z_pen
+        if terminated:
+            reward -= 20
         return reward
         
