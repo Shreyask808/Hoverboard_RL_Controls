@@ -67,8 +67,8 @@ phidot_L_id = model.joint("left_hinge").dofadr[0]
 psidot_id = model.joint("chassis_hinge_z").dofadr[0]
 xidot_id = model.joint("chassis_hinge_x").dofadr[0]
         
-data.qpos[th_id] = np.deg2rad(10)
-data.qpos[gamma_id] = np.deg2rad(0)
+data.qpos[th_id] = np.deg2rad(6)
+data.qpos[gamma_id] = np.deg2rad(2)
 mujoco.mj_forward(model,data)
 
 low = model.actuator_ctrlrange[:,0]
