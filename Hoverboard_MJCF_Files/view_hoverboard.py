@@ -16,6 +16,8 @@ model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
 angle_scale = 1
 rates_scale = np.sqrt(model.body("pendulum_mass").pos[2]/9.81)
+R = model.body("chassis").pos[2]
+h = model.body("pendulum_mass").pos[2]
 
 # Actor (Controller)
 class Policy_Net(nn.Module):
@@ -40,6 +42,9 @@ gamma_log = []
 gammadot_log = []
 Ml_log = []
 Mr_log = []
+psidot_log = []
+phidot_log = []
+r_log = []
 
 input_dim = 12                   
 output_dim = model.nu
@@ -68,7 +73,7 @@ psidot_id = model.joint("chassis_hinge_z").dofadr[0]
 xidot_id = model.joint("chassis_hinge_x").dofadr[0]
         
 data.qpos[th_id] = np.deg2rad(6)
-data.qpos[gamma_id] = np.deg2rad(2)
+data.qpos[gamma_id] = np.deg2rad(0)
 mujoco.mj_forward(model,data)
 
 low = model.actuator_ctrlrange[:,0]
@@ -110,6 +115,13 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
         time_log.append(data.time)
         theta_log.append(th)
         gamma_log.append(data.qpos[gamma_id])
+        psidot_log.append(data.qvel[psidot_id])
+        phidot_log.append((data.qvel[phidot_L_id] + data.qvel[phidot_R_id])/2)
+        if data.qvel[psidot_id] == 0:
+            r_log.append(0)
+        else:
+            r = R*(data.qvel[phidot_L_id] + data.qvel[phidot_R_id])/(2*data.qvel[psidot_id])
+            r_log.append(r)
 
         thetadot_log.append(data.qvel[thdot_id])
         gammadot_log.append(data.qvel[gammadot_id])
@@ -155,6 +167,17 @@ ax1.plot(time_log,Mr_log,color='red',label='Right Wheel Torque')
 ax1.grid(True, alpha=0.3)
 ax1.set_xlabel('Time [sec]')
 ax1.set_ylabel('Motor Torque [N.m]')
+ax1.legend()
+plt.tight_layout()
+plt.show()
+
+fig, (ax1) = plt.subplots(1,1, figsize=[10,12], sharex=True)
+ax1.plot(time_log,r_log,color='black',label='Radius of Curvature')
+ax1.plot(time_log,h*np.sin(gamma_log),color='red',label='h*sin(gamma)')
+ax1.grid(True, alpha=0.3)
+ax1.set_xlabel('Time [sec]')
+ax1.set_ylabel('Radius of Curvature [m]')
+ax1.set_ylim(-50, 50)
 ax1.legend()
 plt.tight_layout()
 plt.show()
