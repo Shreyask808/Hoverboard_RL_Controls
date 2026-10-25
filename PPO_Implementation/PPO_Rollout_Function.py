@@ -40,15 +40,34 @@ def Rollout(env,Actor,Critic,device):
 
     return obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value
 
+# Single Step Advantage Returns
+#def Advantage(critic_list,rewards,last_value,discount_factor):
+#    current_value = np.array(critic_list, dtype=np.float32)
+#    next_value = np.array(critic_list[1:] + [last_value], dtype=np.float32)
+#    rewards = np.array(rewards, dtype=np.float32)
+#    advantage_list = []
+#    targets_list = []
+
+#    targets_list = rewards + discount_factor*next_value
+#    advantage_list = targets_list - current_value
+
+#    return advantage_list,targets_list
+
+# GAE Advantage setup
 def Advantage(critic_list,rewards,last_value,discount_factor):
+    GAE = 0.95
     current_value = np.array(critic_list, dtype=np.float32)
     next_value = np.array(critic_list[1:] + [last_value], dtype=np.float32)
     rewards = np.array(rewards, dtype=np.float32)
-    advantage_list = []
-    targets_list = []
 
-    targets_list = rewards + discount_factor*next_value
-    advantage_list = targets_list - current_value
+    delta = rewards + discount_factor*next_value - current_value
+    advantage_list = np.zeros(len(delta))
+    last = 0.0
+    for i in reversed(range(len(delta))):
+        last = delta[i] + discount_factor*GAE*last
+        advantage_list[i] = last
+
+    targets_list = advantage_list + current_value
 
     return advantage_list,targets_list
 
