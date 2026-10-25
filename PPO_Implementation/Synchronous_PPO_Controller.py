@@ -58,32 +58,39 @@ class PPO_Dataset(Dataset):
     
 def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, clip, device, target_kl=0.01):
     ds = train_loader.dataset
+    actor_active = True
+    actor_epoch = epochs
+    kl = 0.0
+    
     for epoch in range(epochs):
         for obs_b, adv_b, tgt_b, old_lp_b, act_b in train_loader:
-            mean, std = Actor(obs_b)
-            new_lp = Normal(mean, std).log_prob(act_b).sum(dim=1)
-            ratio = torch.exp(new_lp - old_lp_b)
-            L = torch.min(ratio * adv_b, torch.clamp(ratio, 1 - clip, 1 + clip) * adv_b)
+            if actor_active:
+                mean, std = Actor(obs_b)
+                new_lp = Normal(mean, std).log_prob(act_b).sum(dim=1)
+                ratio = torch.exp(new_lp - old_lp_b)
+                L = torch.min(ratio * adv_b, torch.clamp(ratio, 1 - clip, 1 + clip) * adv_b)
 
-            Actor_optim.zero_grad()
-            (-L.mean()).backward()
-            torch.nn.utils.clip_grad_norm_(Actor.parameters(), 0.5)
-            Actor_optim.step()
+                Actor_optim.zero_grad()
+                (-L.mean()).backward()
+                torch.nn.utils.clip_grad_norm_(Actor.parameters(), 0.5)
+                Actor_optim.step()
 
             Critic_optim.zero_grad()
             F.mse_loss(Critic(obs_b), tgt_b).backward()
             torch.nn.utils.clip_grad_norm_(Critic.parameters(), 0.5)
             Critic_optim.step()
 
-        with torch.no_grad():
-            mean, std = Actor(ds.obs)
-            log_ratio = Normal(mean, std).log_prob(ds.action).sum(dim=1) - ds.log_prob
-            kl = ((torch.exp(log_ratio) - 1) - log_ratio).mean().item()
+        if actor_active:
+            with torch.no_grad():
+                mean, std = Actor(ds.obs)
+                log_ratio = Normal(mean, std).log_prob(ds.action).sum(dim=1) - ds.log_prob
+                kl = ((torch.exp(log_ratio) - 1) - log_ratio).mean().item()
 
-        if kl > 1.5 * target_kl:
-            break
+            if kl > 1.5 * target_kl:
+                actor_epoch = epoch+1
+                actor_active = False        
 
-    return kl, epoch + 1
+    return kl, actor_epoch
         
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
