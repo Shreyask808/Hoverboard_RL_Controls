@@ -72,7 +72,7 @@ phidot_L_id = model.joint("left_hinge").dofadr[0]
 psidot_id = model.joint("chassis_hinge_z").dofadr[0]
 xidot_id = model.joint("chassis_hinge_x").dofadr[0]
         
-data.qpos[th_id] = np.deg2rad(6)
+data.qpos[th_id] = np.deg2rad(5)
 data.qpos[gamma_id] = np.deg2rad(0)
 mujoco.mj_forward(model,data)
 
@@ -139,11 +139,13 @@ fig, (ax1,ax2,ax3,ax4) = plt.subplots(4,1, figsize = (10,12), sharex=True)
 ax1.plot(time_log,np.rad2deg(theta_log),color='red')
 ax1.set_xlabel('Time [sec]')
 ax1.set_ylabel('Theta [deg]')
+ax1.set_ylim(-10,10)
 ax1.grid(True, alpha=0.3)
 
 ax2.plot(time_log,np.rad2deg(gamma_log),color='red')
 ax2.set_xlabel('Time [sec]')
 ax2.set_ylabel('Gamma [deg]')
+ax2.set_ylim(-10,10)
 ax2.grid(True, alpha=0.3)
 
 ax3.plot(time_log,np.rad2deg(thetadot_log),color='red')
@@ -171,7 +173,7 @@ ax1.legend()
 plt.tight_layout()
 plt.show()
 
-fig, (ax1) = plt.subplots(1,1, figsize=[10,12], sharex=True)
+fig, (ax1,ax2) = plt.subplots(2,1, figsize=[10,12], sharex=True)
 ax1.plot(time_log,r_log,color='black',label='Radius of Curvature')
 ax1.plot(time_log,h*np.sin(gamma_log),color='red',label='h*sin(gamma)')
 ax1.grid(True, alpha=0.3)
@@ -179,5 +181,12 @@ ax1.set_xlabel('Time [sec]')
 ax1.set_ylabel('Radius of Curvature [m]')
 ax1.set_ylim(-50, 50)
 ax1.legend()
+
+ax2.plot(time_log,psidot_log,color='black',label='Yaw Rate [rad/sec]')
+ax2.grid(True, alpha=0.3)
+ax2.set_xlabel('Time [sec]')
+ax2.set_ylabel('Yaw Rate [rad/sec]')
+ax2.legend()
+
 plt.tight_layout()
 plt.show()
