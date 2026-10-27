@@ -97,7 +97,7 @@ def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, cl
 epochs = 25
 batchsize = 30
 iterations = 2000
-discount_factor = 0.99
+discount_factor = 0.999
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 t0 = time.time()
@@ -134,7 +134,7 @@ if __name__=="__main__":
         adv = replay_buffer.advantage
         replay_buffer.advantage = (adv - adv.mean()) / (adv.std() + 1e-8)
         buffer_dataset = PPO_Dataset(replay_buffer,device)
-        target_steps = 170                                   # steps per iteration that worked early
+        target_steps = 250                                   # steps per iteration that worked early
         n_mb_per_epoch = max(1, target_steps // epochs)      # about 17
         mb_size = max(256, len(adv) // n_mb_per_epoch)
         train_loader = DataLoader(buffer_dataset, batch_size = mb_size, shuffle=True)
