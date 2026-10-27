@@ -1,4 +1,4 @@
- import numpy as np
+import numpy as np
 import mujoco
 import gymnasium
 
@@ -7,14 +7,16 @@ import gymnasium
 class Hoverboard(gymnasium.Env):
     def __init__(self,XML_path):
         super().__init__()
-        input_dim = 12
+        input_dim = 11
         self.hbmodel = mujoco.MjModel.from_xml_path(XML_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
         self.step_count = 0                                                                                                                     # Step counter in Mujoco Step function
 
         ## Hoverboard Data
         self.timestep = self.hbmodel.opt.timestep                                                                                               # Timestep [sec]
-        self.max_count = 10/self.timestep                                                                                                       # Max number of Timesteps [.]
+        self.n_sub = 10                                                                                                                         # Frameskips
+        self.dt_ctrl = self.n_sub*self.timestep                                                                                                 # Timestep of Control Input [sec]
+        self.max_count = int(round(10/self.dt_ctrl))                                                                                            # Max number of Timesteps [.]
         self.g = self.hbmodel.opt.gravity[2]                                                                                                    # Gravity [m/sec^2]
         self.ctrl_dim = self.hbmodel.nu                                                                                                         # Number of control inputs
         self.ctrl_low = self.hbmodel.actuator_ctrlrange[:,0]                                                                                    # Lower Bound for Control Inputs [N.m]
@@ -38,6 +40,7 @@ class Hoverboard(gymnasium.Env):
         self.phidot_L = self.hbmodel.joint("left_hinge").dofadr[0]
         self.psidot = self.hbmodel.joint("chassis_hinge_z").dofadr[0]
         self.xidot = self.hbmodel.joint("chassis_hinge_x").dofadr[0]
+        self.zdot = self.hbmodel.joint("chassis_z").dofadr[0]
 
     def reset(self,seed=None, options=None):
         super().reset(seed=seed)
@@ -45,7 +48,7 @@ class Hoverboard(gymnasium.Env):
         self.step_count = 0
 
         th_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
-        gamma_ini = 0
+        gamma_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -57,23 +60,25 @@ class Hoverboard(gymnasium.Env):
         mujoco.mj_forward(self.hbmodel,self.hbdata)
         return self._get_obs(),{}
 
-    def step(self,action):
+    def step(self, action):
         self.hbdata.ctrl[:] = action
-        mujoco.mj_step(self.hbmodel,self.hbdata)
-        self.step_count +=1
-        obs = self._get_obs()
-        terminate,*_ = self._check_done()
+        terminate = False
+        for _ in range(self.n_sub):
+            mujoco.mj_step(self.hbmodel, self.hbdata)
+            terminate, *_ = self._check_done()
+            if terminate:
+                break
         reward = self._compute_reward(terminate)
+        self.step_count += 1
+        obs = self._get_obs()
         truncate = self.step_count >= self.max_count
-        return obs,reward,terminate,truncate, {}
+        return obs, reward, terminate, truncate, {}
 
     def _get_obs(self):
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
-        psi = self.hbdata.qpos[self.psi]
-        phi_R = self.hbdata.qpos[self.phi_R]
-        phi_L = self.hbdata.qpos[self.phi_L]
         xi = self.hbdata.qpos[self.xi]
+        z = self.hbdata.qpos[self.z]
 
         thdot = self.hbdata.qvel[self.thdot]
         gammadot = self.hbdata.qvel[self.gammadot]
@@ -81,10 +86,11 @@ class Hoverboard(gymnasium.Env):
         phidot_R = self.hbdata.qvel[self.phidot_R]
         phidot_L = self.hbdata.qvel[self.phidot_L]
         xidot = self.hbdata.qvel[self.xidot]
+        zdot = self.hbdata.qvel[self.zdot]
 
-        angles = [th,gamma,psi,phi_R,phi_L,xi]
-        velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot]
-        observation = np.concatenate([angles,velocity])
+        displacement = [th,gamma,xi,z]
+        velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot,zdot]
+        observation = np.concatenate([displacement,velocity])
         return observation
 
     def _check_done(self):

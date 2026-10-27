@@ -17,8 +17,8 @@ from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 # =================================================================================================================================================================================================================
 # Parallel Workers definition
 Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
-N_workers = 5
-input_dim = 12
+N_workers = 10
+input_dim = 11
 
 @dataclass
 class Batch:
@@ -95,9 +95,9 @@ def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, cl
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
 epochs = 25
-batchsize = 10
+batchsize = 30
 iterations = 1200
-discount_factor = 0.999
+discount_factor = 0.99
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 t0 = time.time()
@@ -106,6 +106,7 @@ if __name__=="__main__":
     mp.set_start_method("spawn")
 
     Actor = Policy_Net(input_dim,64,64,2).to(device)                                                            # Stays in GPU if available
+    
     Critic = Value_Function(input_dim,64,64,64).to(device)                                                      # Stays in GPU if available
 
     Actor_optim  = optim.Adam(Actor.parameters(),lr=3e-4)
@@ -147,8 +148,8 @@ if __name__=="__main__":
         p.join()
 
     tf = time.time()
-    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Actor_10W.pth")
-    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Critic_10W.pth")
+    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Actor_5W.pth")
+    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Critic_5W.pth")
 
     wall_clock_time_min = np.floor((tf -t0)/60)
     wall_clock_time_sec = (tf - t0)%60
