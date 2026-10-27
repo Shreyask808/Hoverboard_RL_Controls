@@ -96,7 +96,7 @@ def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, cl
 # Synchronous PPO Architecture Definition
 epochs = 25
 batchsize = 30
-iterations = 1200
+iterations = 2000
 discount_factor = 0.99
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
