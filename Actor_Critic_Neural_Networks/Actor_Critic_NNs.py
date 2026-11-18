@@ -13,7 +13,7 @@ class Policy_Net(nn.Module):
         self.fc1 = nn.Linear(input_dim, h1_dim)
         self.fc2 = nn.Linear(h1_dim, h2_dim)
         self.fc3 = nn.Linear(h2_dim, output_dim)
-        self.log_std = nn.Parameter(torch.zeros(output_dim))
+        self.log_std = nn.Parameter(-0.5*torch.ones(2))
 
     def forward(self,x):
         x = f.relu(self.fc1(x))

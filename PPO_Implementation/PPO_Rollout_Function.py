@@ -4,8 +4,7 @@ from torch.distributions import Normal
 
 # =================================================================================================================================================================================================================
 # PPO Rollout Function
-discount_factor = 0.999
-def rollout(env,Actor,Critic,device):
+def Rollout(env,Actor,Critic,device):
     obs_list = []
     raw_action_list = []
     rewards = []
@@ -15,7 +14,7 @@ def rollout(env,Actor,Critic,device):
     terminate = False
 
     with torch.no_grad():
-        for t in range(env.max_count):
+        for t in range(int(env.max_count)):
             obs_list.append(obs)
             obs_tensor = torch.tensor(obs, dtype=torch.float32, device=device).unsqueeze(0)
             value_function = Critic(obs_tensor)
@@ -41,14 +40,59 @@ def rollout(env,Actor,Critic,device):
 
     return obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value
 
+# Single Step Advantage Returns
+#def Advantage(critic_list,rewards,last_value,discount_factor):
+#    current_value = np.array(critic_list, dtype=np.float32)
+#    next_value = np.array(critic_list[1:] + [last_value], dtype=np.float32)
+#    rewards = np.array(rewards, dtype=np.float32)
+#    advantage_list = []
+#    targets_list = []
+
+#    targets_list = rewards + discount_factor*next_value
+#    advantage_list = targets_list - current_value
+
+#    return advantage_list,targets_list
+
+# GAE Advantage setup
 def Advantage(critic_list,rewards,last_value,discount_factor):
+    GAE = 0.95
     current_value = np.array(critic_list, dtype=np.float32)
     next_value = np.array(critic_list[1:] + [last_value], dtype=np.float32)
     rewards = np.array(rewards, dtype=np.float32)
-    advantage_list = []
-    targets_list = []
 
-    targets_list = rewards + discount_factor*next_value
-    advantage_list = targets_list - current_value
+    delta = rewards + discount_factor*next_value - current_value
+    advantage_list = np.zeros(len(delta))
+    last = 0.0
+    for i in reversed(range(len(delta))):
+        last = delta[i] + discount_factor*GAE*last
+        advantage_list[i] = last
+
+    targets_list = advantage_list + current_value
 
     return advantage_list,targets_list
+
+def Batch_Rollout(env,Actor,Critic,batchsize,discount_factor,device):
+    batch_obs = []
+    batch_log_probs = []
+    batch_action = []
+    batch_advantage = []
+    batch_targets = []
+    episode_length = []
+
+    for i in range(batchsize):
+        obs_list,log_prob_list,raw_action_list,critic_list,rewards,last_value = Rollout(env,Actor,Critic,device)
+        episode_length.append(len(rewards)*env.dt_ctrl)
+        advantage_list,targets_list = Advantage(critic_list,rewards,last_value,discount_factor)
+        batch_obs.extend(obs_list)
+        batch_advantage.append(advantage_list)
+        batch_targets.append(targets_list)
+        batch_log_probs.extend(log_prob_list)
+        batch_action.extend(raw_action_list)
+
+    batch_obs = np.array(batch_obs, dtype=np.float32)
+    batch_log_probs = np.array(batch_log_probs, dtype=np.float32)
+    batch_action = np.array(batch_action, dtype=np.float32)
+    batch_advantage = np.concatenate(batch_advantage)
+    batch_targets = np.concatenate(batch_targets)
+    episode_length = np.array(episode_length)
+    return batch_obs,batch_advantage,batch_targets,batch_log_probs,batch_action,episode_length
