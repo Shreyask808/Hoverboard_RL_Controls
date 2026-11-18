@@ -19,6 +19,8 @@ from PPO_Implementation.PPO_Rollout_Function import Batch_Rollout
 Hbd_path = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
 N_workers = 10
 input_dim = 11
+#Actor_Weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Actor_5W.pth"
+#Critic_Weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Critic_5W.pth"
 
 @dataclass
 class Batch:
@@ -61,43 +63,50 @@ def PPO_Update(Actor, Critic, train_loader, Actor_optim, Critic_optim,epochs, cl
     actor_active = True
     actor_epoch = epochs
     kl = 0.0
+    KL_value = 0.0
     
     for epoch in range(epochs):
         for obs_b, adv_b, tgt_b, old_lp_b, act_b in train_loader:
             if actor_active:
                 mean, std = Actor(obs_b)
                 new_lp = Normal(mean, std).log_prob(act_b).sum(dim=1)
-                ratio = torch.exp(new_lp - old_lp_b)
+                log_ratio = new_lp - old_lp_b
+                ratio = torch.exp(log_ratio)
                 L = torch.min(ratio * adv_b, torch.clamp(ratio, 1 - clip, 1 + clip) * adv_b)
-
-                Actor_optim.zero_grad()
-                (-L.mean()).backward()
-                torch.nn.utils.clip_grad_norm_(Actor.parameters(), 0.5)
-                Actor_optim.step()
+                kl = ((ratio - 1) - log_ratio).mean().item()
+                if kl > 1.5*target_kl:
+                    actor_active = False
+                    KL_value = kl
+                else:
+                    Actor_optim.zero_grad()
+                    (-L.mean()).backward()
+                    torch.nn.utils.clip_grad_norm_(Actor.parameters(), 0.5)
+                    Actor_optim.step()
+                    KL_value = kl
 
             Critic_optim.zero_grad()
             F.mse_loss(Critic(obs_b), tgt_b).backward()
             torch.nn.utils.clip_grad_norm_(Critic.parameters(), 0.5)
             Critic_optim.step()
 
-        if actor_active:
-            with torch.no_grad():
-                mean, std = Actor(ds.obs)
-                log_ratio = Normal(mean, std).log_prob(ds.action).sum(dim=1) - ds.log_prob
-                kl = ((torch.exp(log_ratio) - 1) - log_ratio).mean().item()
+#        if actor_active:
+#            with torch.no_grad():
+#                mean, std = Actor(ds.obs)
+#                log_ratio = Normal(mean, std).log_prob(ds.action).sum(dim=1) - ds.log_prob
+#                kl = ((torch.exp(log_ratio) - 1) - log_ratio).mean().item()
 
-            if kl > 1.5 * target_kl:
-                actor_epoch = epoch+1
-                actor_active = False        
+#            if kl > 1.5 * target_kl:
+#                actor_epoch = epoch+1
+#                actor_active = False        
 
-    return kl, actor_epoch
+    return KL_value#, actor_epoch
         
 # =================================================================================================================================================================================================================
 # Synchronous PPO Architecture Definition
-epochs = 25
-batchsize = 30
-iterations = 2000
-discount_factor = 0.999
+epochs = 20
+batchsize = 50
+iterations = 1000
+discount_factor = 0.99
 clip = 0.2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 t0 = time.time()
@@ -106,9 +115,10 @@ if __name__=="__main__":
     mp.set_start_method("spawn")
 
     Actor = Policy_Net(input_dim,64,64,2).to(device)                                                            # Stays in GPU if available
-    
+    #Actor.load_state_dict(torch.load(Actor_Weights,map_location=device))
     Critic = Value_Function(input_dim,64,64,64).to(device)                                                      # Stays in GPU if available
-
+    #Critic.load_state_dict(torch.load(Critic_Weights,map_location=device))
+    
     Actor_optim  = optim.Adam(Actor.parameters(),lr=3e-4)
     Critic_optim = optim.Adam(Critic.parameters(),lr=1e-4)
 
@@ -136,11 +146,17 @@ if __name__=="__main__":
         buffer_dataset = PPO_Dataset(replay_buffer,device)
         target_steps = 250                                   # steps per iteration that worked early
         n_mb_per_epoch = max(1, target_steps // epochs)      # about 17
-        mb_size = max(256, len(adv) // n_mb_per_epoch)
+        #mb_size = max(256, len(adv) // n_mb_per_epoch)
+        if (len(adv)) >= 100:
+            mb_size = 512
+        else:
+            mb_size = 64
         train_loader = DataLoader(buffer_dataset, batch_size = mb_size, shuffle=True)
-        kl, epoch = PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
+        kl = PPO_Update(Actor,Critic,train_loader,Actor_optim,Critic_optim,epochs,clip,device)
 
-        print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}, KL = {kl}, Epoch = {epoch}")
+        print(f"{itr+1}. Average Episode Length for all workers - {replay_buffer.episode_length.mean()}, KL = {kl}")
+        if replay_buffer.episode_length.mean() >= 6.0:
+            break
 
     for q in worker_inputs:
         q.put(None)
@@ -148,8 +164,8 @@ if __name__=="__main__":
         p.join()
 
     tf = time.time()
-    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Actor_5W.pth")
-    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Critic_5W.pth")
+    torch.save(Actor.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_8_Actor_5W.pth")
+    torch.save(Critic.state_dict(),"/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_8_Critic_5W.pth")
 
     wall_clock_time_min = np.floor((tf -t0)/60)
     wall_clock_time_sec = (tf - t0)%60
