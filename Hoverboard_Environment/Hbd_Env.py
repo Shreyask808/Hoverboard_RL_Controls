@@ -11,6 +11,7 @@ class Hoverboard(gymnasium.Env):
         self.hbmodel = mujoco.MjModel.from_xml_path(XML_path)
         self.hbdata = mujoco.MjData(self.hbmodel)
         self.step_count = 0                                                                                                                     # Step counter in Mujoco Step function
+        self.h = self.hbmodel.body("pendulum_mass").pos[2]
 
         ## Hoverboard Data
         self.timestep = self.hbmodel.opt.timestep                                                                                               # Timestep [sec]
@@ -47,8 +48,8 @@ class Hoverboard(gymnasium.Env):
         mujoco.mj_resetData(self.hbmodel, self.hbdata)
         self.step_count = 0
 
-        th_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
-        gamma_ini = self.np_random.uniform(-np.deg2rad(10), np.deg2rad(10))
+        th_ini = self.np_random.uniform(-np.deg2rad(15), np.deg2rad(15))
+        gamma_ini = 0
         thdot_ini = 0
         gammadot_ini = 0
 
@@ -75,18 +76,20 @@ class Hoverboard(gymnasium.Env):
         return obs, reward, terminate, truncate, {}
 
     def _get_obs(self):
+        angular_velocity_scale = np.sqrt(np.abs(self.h/self.g))
+        length_scale = 1/self.h
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
         xi = self.hbdata.qpos[self.xi]
-        z = self.hbdata.qpos[self.z]
+        z = self.hbdata.qpos[self.z]*length_scale
 
-        thdot = self.hbdata.qvel[self.thdot]
-        gammadot = self.hbdata.qvel[self.gammadot]
-        psidot = self.hbdata.qvel[self.psidot]
-        phidot_R = self.hbdata.qvel[self.phidot_R]
-        phidot_L = self.hbdata.qvel[self.phidot_L]
-        xidot = self.hbdata.qvel[self.xidot]
-        zdot = self.hbdata.qvel[self.zdot]
+        thdot = self.hbdata.qvel[self.thdot]*angular_velocity_scale
+        gammadot = self.hbdata.qvel[self.gammadot]*angular_velocity_scale
+        psidot = self.hbdata.qvel[self.psidot]*angular_velocity_scale
+        phidot_R = self.hbdata.qvel[self.phidot_R]*angular_velocity_scale
+        phidot_L = self.hbdata.qvel[self.phidot_L]*angular_velocity_scale
+        xidot = self.hbdata.qvel[self.xidot]*angular_velocity_scale
+        zdot = self.hbdata.qvel[self.zdot]*angular_velocity_scale*length_scale
 
         displacement = [th,gamma,xi,z]
         velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot,zdot]
@@ -106,13 +109,14 @@ class Hoverboard(gymnasium.Env):
         return status,status_th,status_gamma,status_xi,status_z
 
     def _compute_reward(self, terminated):
+        angle_scale = 0.2#np.deg2rad(20)
         th = self.hbdata.qpos[self.th]
         gamma = self.hbdata.qpos[self.gamma]
         xi = self.hbdata.qpos[self.xi]
         z = self.hbdata.qpos[self.z]
 
         alive_bonus = 1
-        balance_reward = np.exp(-(th/0.2)**2 - (gamma/0.2)**2)
+        balance_reward = -(th/angle_scale)**2 - (gamma/angle_scale)**2
         xi_pen = (xi / np.deg2rad(5))**2
         z_pen  = (z / 0.1)**2
         
