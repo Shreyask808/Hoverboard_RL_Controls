@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 
 xml_path = "/mnt/c/Users/Admin/Documents/Github/Hoverboard_RL_Controls/Hoverboard_MJCF_Files/hoverboard_4.xml"
-weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_5_Actor_10W.pth"
+weights = "/mnt/c/Users/admin/Documents/Github/Hoverboard_RL_Controls/PPO_Implementation/PPO_attempt_7_Actor_5W.pth"
 
 model = mujoco.MjModel.from_xml_path(xml_path)
 data = mujoco.MjData(model)
@@ -18,6 +18,7 @@ angle_scale = 1
 rates_scale = np.sqrt(model.body("pendulum_mass").pos[2]/9.81)
 R = model.body("chassis").pos[2]
 h = model.body("pendulum_mass").pos[2]
+
 
 # Actor (Controller)
 class Policy_Net(nn.Module):
@@ -46,7 +47,7 @@ psidot_log = []
 phidot_log = []
 r_log = []
 
-input_dim = 12                   
+input_dim = 11                   
 output_dim = model.nu
 nn_policy = Policy_Net(input_dim,64,64,2)
 nn_policy.load_state_dict(torch.load(weights, map_location="cpu"))
@@ -56,6 +57,7 @@ duration= 100
 left_motor_id = model.actuator("left_motor").id
 right_motor_id = model.actuator("right_motor").id
 
+## States indices
 th_id = model.joint("pend_hinge_y").qposadr[0]
 gamma_id = model.joint("pend_hinge_x").qposadr[0]
 phi_R_id = model.joint("right_hinge").qposadr[0]
@@ -71,6 +73,7 @@ phidot_R_id = model.joint("right_hinge").dofadr[0]
 phidot_L_id = model.joint("left_hinge").dofadr[0]
 psidot_id = model.joint("chassis_hinge_z").dofadr[0]
 xidot_id = model.joint("chassis_hinge_x").dofadr[0]
+zdot_id = model.joint("chassis_z").dofadr[0]
         
 data.qpos[th_id] = np.deg2rad(5)
 data.qpos[gamma_id] = np.deg2rad(0)
@@ -84,10 +87,8 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
         step_start = time.time()
         th = data.qpos[th_id]
         gamma = data.qpos[gamma_id]
-        psi = data.qpos[psi_id]
-        phi_R = data.qpos[phi_R_id]
-        phi_L = data.qpos[phi_L_id]
         xi = data.qpos[xi_id]
+        z = data.qpos[z_id]
 
         thdot = data.qvel[thdot_id]
         gammadot = data.qvel[gammadot_id]
@@ -95,10 +96,11 @@ with mujoco.viewer.launch_passive(model,data) as viewer:
         phidot_R = data.qvel[phidot_R_id]
         phidot_L = data.qvel[phidot_L_id]
         xidot = data.qvel[xidot_id]
+        zdot = data.qvel[zdot_id]
 
-        angles = [th,gamma,psi,phi_R,phi_L,xi]
-        velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot]
-        states = np.concatenate([angles, velocity])
+        displacement = [th,gamma,xi,z]
+        velocity = [thdot,gammadot,psidot,phidot_R,phidot_L,xidot,zdot]
+        states = np.concatenate([displacement,velocity])
         inputs = torch.tensor(states, dtype=torch.float32).unsqueeze(0) 
         mean, std = nn_policy(inputs)
         u = torch.tanh(mean)
